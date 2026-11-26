@@ -36,7 +36,10 @@ create table public.cafeterias (
   estado_suscripcion  public.estado_suscripcion not null default 'prueba',
   creado_en           timestamptz not null default now(),
   actualizado_en      timestamptz not null default now(),
-  constraint slug_formato check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$')
+  constraint slug_formato check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  constraint color_fondo_formato     check (color_fondo     ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint color_texto_formato     check (color_texto     ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint color_etiquetas_formato check (color_etiquetas ~ '^#[0-9A-Fa-f]{6}$')
 );
 
 -- Sucursales
@@ -46,18 +49,24 @@ create table public.sucursales (
   nombre        text not null,
   direccion     text,
   activa        boolean not null default true,
-  creado_en     timestamptz not null default now()
+  creado_en     timestamptz not null default now(),
+  constraint sucursal_id_cafeteria_unica unique (id, cafeteria_id)   -- para la FK compuesta de staff
 );
 
 -- Personal (dueños y baristas). El id es el mismo del usuario de Supabase Auth
 create table public.staff (
   id            uuid primary key references auth.users(id) on delete cascade,
   cafeteria_id  uuid not null references public.cafeterias(id) on delete cascade,
-  sucursal_id   uuid references public.sucursales(id) on delete set null,
+  sucursal_id   uuid,
   nombre        text not null,
   rol           public.rol_staff not null default 'barista',
   activo        boolean not null default true,
-  creado_en     timestamptz not null default now()
+  creado_en     timestamptz not null default now(),
+  -- La sucursal debe ser de la misma cafetería del staff
+  constraint staff_sucursal_misma_cafeteria
+    foreign key (sucursal_id, cafeteria_id)
+    references public.sucursales (id, cafeteria_id)
+    on delete set null (sucursal_id)
 );
 
 -- Programas de lealtad (ej. "Compra 9, el 10 es gratis")
@@ -178,6 +187,24 @@ create trigger trg_tarjetas_actualizado before update on public.tarjetas
 create trigger trg_apple_disp_actualizado before update on public.apple_dispositivos
   for each row execute function public.tg_actualizado_en();
 
+-- Zona horaria válida (si no, los sellos de esa cafetería fallan)
+create or replace function public.tg_validar_zona_horaria()
+returns trigger
+language plpgsql
+as $$
+begin
+  if not exists (select 1 from pg_timezone_names where name = new.zona_horaria) then
+    raise exception 'Zona horaria no válida: %', new.zona_horaria
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_cafeterias_zona_horaria
+  before insert or update of zona_horaria on public.cafeterias
+  for each row execute function public.tg_validar_zona_horaria();
+
 
 -- ---------------------------------------------------------------------
 --  5. FUNCIONES AUXILIARES PARA SEGURIDAD
@@ -278,10 +305,16 @@ create policy "staff_ver" on public.staff
   for select to authenticated
   using (cafeteria_id = public.mi_cafeteria_id() or public.es_admin());
 
+-- El dueño edita a su staff, pero no a sí mismo
+-- (evita que se quite el rol de dueño o se desactive solo)
 create policy "staff_editar_dueno" on public.staff
   for update to authenticated
-  using (public.es_dueno() and cafeteria_id = public.mi_cafeteria_id())
-  with check (cafeteria_id = public.mi_cafeteria_id());
+  using (public.es_dueno() and cafeteria_id = public.mi_cafeteria_id() and id <> auth.uid())
+  with check (cafeteria_id = public.mi_cafeteria_id() and id <> auth.uid());
+
+-- Solo estas columnas (no id ni cafeteria_id)
+revoke update on public.staff from authenticated;
+grant update (nombre, sucursal_id, rol, activo) on public.staff to authenticated;
 
 -- Programas
 create policy "programa_ver" on public.programas
@@ -296,6 +329,13 @@ create policy "programa_editar_dueno" on public.programas
   for update to authenticated
   using (public.es_dueno() and cafeteria_id = public.mi_cafeteria_id())
   with check (cafeteria_id = public.mi_cafeteria_id());
+
+-- google_class_id solo lo escribe el backend
+revoke insert, update on public.programas from authenticated;
+grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
+  on public.programas to authenticated;
+grant update (nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
+  on public.programas to authenticated;
 
 -- Clientes, tarjetas y movimientos: solo lectura para el staff
 -- (los cambios pasan por el backend o por las funciones de sellar/canjear)
