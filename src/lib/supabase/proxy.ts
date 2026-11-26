@@ -1,8 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Refresca la sesión de Supabase Auth en cada request y
-// pasa las cookies actualizadas tanto al request como a la respuesta.
+// Rutas que requieren sesión iniciada
+const RUTAS_PROTEGIDAS = ["/panel", "/barista", "/admin"];
+
+function esRutaProtegida(pathname: string) {
+  return RUTAS_PROTEGIDAS.some(
+    (ruta) => pathname === ruta || pathname.startsWith(`${ruta}/`),
+  );
+}
+
+// Refresca la sesión de Supabase Auth en cada request,
+// pasa las cookies actualizadas al request y a la respuesta,
+// y manda al login a quien entra a una ruta protegida sin sesión.
+// El rol (dueño, barista, admin) se revisa en el layout de cada sección.
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -32,7 +43,20 @@ export async function updateSession(request: NextRequest) {
 
   // No poner código entre createServerClient y getClaims():
   // getClaims() valida el token y lo refresca si ya venció.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
+
+  if (!data?.claims && esRutaProtegida(request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+
+    const redireccion = NextResponse.redirect(url);
+    // Conservar las cookies que Supabase haya actualizado
+    response.cookies.getAll().forEach((cookie) =>
+      redireccion.cookies.set(cookie),
+    );
+    return redireccion;
+  }
 
   return response;
 }

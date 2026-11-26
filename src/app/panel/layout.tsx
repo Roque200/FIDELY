@@ -1,0 +1,24 @@
+import { Suspense } from "react";
+import { requireRol } from "@/lib/auth";
+import { Encabezado } from "@/components/encabezado";
+import { PantallaCarga } from "@/components/pantalla-carga";
+
+export default function PanelLayout({ children }: LayoutProps<"/panel">) {
+  return (
+    <Suspense fallback={<PantallaCarga />}>
+      <SeccionDueno>{children}</SeccionDueno>
+    </Suspense>
+  );
+}
+
+// Lee la sesión (por eso va dentro de Suspense) y valida que sea dueño
+async function SeccionDueno({ children }: { children: React.ReactNode }) {
+  const perfil = await requireRol("dueno");
+
+  return (
+    <div className="flex flex-1 flex-col bg-stone-50">
+      <Encabezado titulo="Panel" subtitulo={perfil.nombre} />
+      <main className="flex-1 p-4">{children}</main>
+    </div>
+  );
+}
