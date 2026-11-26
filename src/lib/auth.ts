@@ -42,22 +42,31 @@ export const getPerfil = cache(async (): Promise<Perfil | null> => {
   const userId = claims.sub;
   const correo = typeof claims.email === "string" ? claims.email : null;
 
-  const { data: admin } = await supabase
+  const { data: admin, error: errorAdmin } = await supabase
     .from("super_admins")
     .select("user_id")
     .eq("user_id", userId)
     .maybeSingle();
+
+  // Si la base falla no hay que decirle "sin acceso": mejor mostrar el error
+  if (errorAdmin) {
+    throw new Error(`No se pudo leer super_admins: ${errorAdmin.message}`);
+  }
 
   if (admin) {
     return { tipo: "admin", userId, correo };
   }
 
   // RLS solo deja ver el registro si el staff está activo
-  const { data: staff } = await supabase
+  const { data: staff, error: errorStaff } = await supabase
     .from("staff")
     .select("nombre, rol, cafeteria_id, sucursal_id, activo")
     .eq("id", userId)
     .maybeSingle();
+
+  if (errorStaff) {
+    throw new Error(`No se pudo leer staff: ${errorStaff.message}`);
+  }
 
   if (!staff || !staff.activo) {
     return { tipo: "sin_acceso", userId, correo };
