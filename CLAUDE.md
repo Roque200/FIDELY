@@ -24,7 +24,8 @@ Etapa actual: MVP. Ya está definido el esquema de base de datos (`supabase/sche
 - Una sola BD con `cafeteria_id` en las tablas y RLS activado en todas.
 - Helpers SQL: `mi_cafeteria_id()`, `es_dueno()`, `es_admin()`.
 - El staff solo lee clientes, tarjetas y movimientos. Los sellos y canjes solo pasan por las funciones RPC `registrar_sello(p_codigo, p_sucursal_id)` y `canjear_premio(p_codigo, p_sucursal_id)`, que validan la suscripción, la sucursal, el límite diario (según `zona_horaria` de la cafetería) y registran en `movimientos`.
-- El dueño solo puede editar columnas visuales de `cafeterias` (column grants), no `plan` ni `estado_suscripcion`.
+- El dueño solo puede editar columnas visuales de `cafeterias` (column grants), no `plan`, `estado_suscripcion` ni `max_programas`.
+- `cafeterias.max_programas` (default 1) limita los programas activos por cafetería; un trigger lo valida y solo el super admin lo sube.
 - El backend usa la `service_role` key (se salta RLS) para:
   - el registro público de clientes en `/c/[slug]`
   - la creación y firma de las tarjetas (Apple y Google)

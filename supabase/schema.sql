@@ -34,12 +34,14 @@ create table public.cafeterias (
   zona_horaria        text not null default 'America/Mexico_City',
   plan                text not null default 'basico',
   estado_suscripcion  public.estado_suscripcion not null default 'prueba',
+  max_programas       int not null default 1,                -- programas activos permitidos (lo decide el super admin)
   creado_en           timestamptz not null default now(),
   actualizado_en      timestamptz not null default now(),
   constraint slug_formato check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   constraint color_fondo_formato     check (color_fondo     ~ '^#[0-9A-Fa-f]{6}$'),
   constraint color_texto_formato     check (color_texto     ~ '^#[0-9A-Fa-f]{6}$'),
-  constraint color_etiquetas_formato check (color_etiquetas ~ '^#[0-9A-Fa-f]{6}$')
+  constraint color_etiquetas_formato check (color_etiquetas ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint max_programas_minimo check (max_programas >= 1)
 );
 
 -- Sucursales
@@ -205,6 +207,50 @@ create trigger trg_cafeterias_zona_horaria
   before insert or update of zona_horaria on public.cafeterias
   for each row execute function public.tg_validar_zona_horaria();
 
+-- Límite de programas activos por cafetería (cafeterias.max_programas)
+create or replace function public.tg_limite_programas()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_max     int;
+  v_activos int;
+begin
+  -- Solo cuenta al crear uno activo o al reactivar uno inactivo
+  if not new.activo then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and old.activo then
+    return new;
+  end if;
+
+  -- Bloquea la cafetería para que dos altas al mismo tiempo no se salten el límite
+  select max_programas into v_max
+  from public.cafeterias
+  where id = new.cafeteria_id
+  for update;
+
+  select count(*) into v_activos
+  from public.programas
+  where cafeteria_id = new.cafeteria_id
+    and activo
+    and id <> new.id;
+
+  if v_activos >= v_max then
+    raise exception 'Tu plan permite % programa(s) activo(s). Desactiva uno o pide que te aumenten el límite.', v_max
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_programas_limite
+  before insert or update of activo on public.programas
+  for each row execute function public.tg_limite_programas();
+
 
 -- ---------------------------------------------------------------------
 --  5. FUNCIONES AUXILIARES PARA SEGURIDAD
@@ -277,7 +323,7 @@ create policy "cafeteria_editar_dueno" on public.cafeterias
   using (public.es_dueno() and id = public.mi_cafeteria_id())
   with check (id = public.mi_cafeteria_id());
 
--- El dueño solo puede editar datos visuales, no su plan ni su suscripción
+-- El dueño solo puede editar datos visuales, no su plan, su suscripción ni max_programas
 revoke update on public.cafeterias from authenticated;
 grant update (nombre, logo_url, color_fondo, color_texto, color_etiquetas, zona_horaria)
   on public.cafeterias to authenticated;
