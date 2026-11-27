@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { CreditCard, TriangleAlert } from "lucide-react";
 import { verificarAcceso } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -63,7 +64,7 @@ async function Contenido() {
       <CabeceraSeccion
         titulo="Tarjetas"
         descripcion={`${activos} programa${activos === 1 ? "" : "s"} activo${activos === 1 ? "" : "s"} · tu plan permite ${maximo}`}
-        accion={<BotonAgregar pronto />}
+        accion={<BotonAgregar href="/panel/programas/nuevo" />}
       />
 
       {activos > maximo && (
@@ -89,20 +90,28 @@ async function Contenido() {
             Crea tu programa de lealtad (por ejemplo, &quot;compra 9 y el 10 es
             gratis&quot;) para que tus clientes guarden su tarjeta en Wallet.
           </p>
+          <Link
+            href="/panel/programas/nuevo"
+            className="mt-2 rounded-lg bg-amber-900 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-amber-800"
+          >
+            Crear mi primer programa
+          </Link>
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-6 p-4 md:p-6">
           {programas.map((programa) => (
             <div key={programa.id} className="flex flex-col items-center gap-3">
-              <div
-                className={`w-full max-w-[300px] ${programa.activo ? "" : "opacity-60"}`}
+              <Link
+                href={`/panel/programas/${programa.id}`}
+                aria-label={`Editar ${programa.nombre}`}
+                className={`block w-full max-w-[300px] rounded-2xl transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 ${programa.activo ? "" : "opacity-60"}`}
               >
                 <TarjetaWallet
                   cafeteria={cafeteria}
                   programa={programa}
                   valorQr={`fidely:vista-previa:${programa.id}`}
                 />
-              </div>
+              </Link>
               <EstadoPill
                 texto={programa.activo ? "Activo" : "Inactivo"}
                 tono={programa.activo ? "verde" : "gris"}

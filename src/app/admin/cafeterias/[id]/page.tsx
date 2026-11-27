@@ -41,7 +41,7 @@ async function Contenido({
   const [cafeteriaRes, duenosRes, programasRes] = await Promise.all([
     supabase
       .from("cafeterias")
-      .select("id, nombre, slug, zona_horaria, plan, estado_suscripcion, max_programas")
+      .select("id, nombre, slug, zona_horaria, plan, estado_suscripcion, max_programas, actualizado_en")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -105,7 +105,7 @@ async function Contenido({
             {programasActivos === 1 ? "" : "s"} de {cafeteria.max_programas} permitido
             {cafeteria.max_programas === 1 ? "" : "s"}.
           </p>
-          <FormularioEdicion cafeteria={cafeteria} />
+          <FormularioEdicion key={cafeteria.actualizado_en} cafeteria={cafeteria} />
         </section>
 
         <section className="space-y-4 rounded-xl p-4 ring-1 ring-stone-200 md:p-5">
