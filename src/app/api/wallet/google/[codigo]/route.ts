@@ -1,15 +1,18 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { linkGuardarGoogle } from "@/lib/google-wallet";
+import { origenActual } from "@/lib/origen";
 
 // "Agregar a Google Wallet": prepara la tarjeta en Google y manda al cliente
 // a la página de Google para guardarla. El código de la tarjeta funciona
 // como llave (solo lo tiene el dueño de la tarjeta).
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ codigo: string }> },
 ) {
   const { codigo } = await params;
-  const origen = request.nextUrl.origin;
+  // La dirección que usa el navegador (no la interna del servidor): va en los
+  // links de la tarjeta y en "origins" del JWT, que Google valida
+  const origen = await origenActual();
   const volver = (motivo: string) =>
     NextResponse.redirect(new URL(`/t/${codigo}?wallet=${motivo}`, origen), 303);
 
