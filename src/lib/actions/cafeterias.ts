@@ -200,25 +200,46 @@ export async function crearCafeteria(
 //  Editar plan, estado, zona y límite de programas
 // ---------------------------------------------------------------------
 
+export type ValoresEdicion = {
+  nombre: string;
+  zona_horaria: string;
+  plan: string;
+  estado_suscripcion: string;
+  max_programas: string;
+};
+
 export type EstadoEdicion = {
   error: string | null;
   guardado: boolean;
+  // Lo que se envió, para no perderlo si hay error
+  valores: ValoresEdicion | null;
 };
 
 export async function actualizarCafeteria(
   _anterior: EstadoEdicion,
   fd: FormData,
 ): Promise<EstadoEdicion> {
-  const fallo = (error: string): EstadoEdicion => ({ error, guardado: false });
-
-  if (!(await esAdmin())) return fallo("No autorizado.");
-
   const id = texto(fd, "id");
   const nombre = texto(fd, "nombre");
   const zona = texto(fd, "zona_horaria");
   const plan = texto(fd, "plan").toLowerCase();
   const estado = texto(fd, "estado_suscripcion");
-  const maxProgramas = enteroValido(texto(fd, "max_programas"), 1, 50);
+  const maxTexto = texto(fd, "max_programas");
+  const maxProgramas = enteroValido(maxTexto, 1, 50);
+
+  const fallo = (error: string): EstadoEdicion => ({
+    error,
+    guardado: false,
+    valores: {
+      nombre,
+      zona_horaria: zona,
+      plan,
+      estado_suscripcion: estado,
+      max_programas: maxTexto,
+    },
+  });
+
+  if (!(await esAdmin())) return fallo("No autorizado.");
 
   if (!/^[0-9a-f-]{36}$/.test(id)) return fallo("Cafetería no válida.");
   if (nombre.length < 2 || nombre.length > 80) {
@@ -253,7 +274,7 @@ export async function actualizarCafeteria(
 
   // Que la página muestre los datos nuevos (título, contador de programas)
   refresh();
-  return { error: null, guardado: true };
+  return { error: null, guardado: true, valores: null };
 }
 
 // ---------------------------------------------------------------------

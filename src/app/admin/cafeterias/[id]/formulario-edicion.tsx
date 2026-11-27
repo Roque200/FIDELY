@@ -6,13 +6,13 @@ import {
   actualizarCafeteria,
   type EstadoEdicion,
 } from "@/lib/actions/cafeterias";
-import { ZONAS_HORARIAS } from "@/lib/zonas-horarias";
 import {
   Campo,
   CLASE_BOTON,
   CLASE_INPUT,
   MensajeError,
 } from "@/components/formulario";
+import { SelectorZona } from "@/components/selector-zona";
 
 type Props = {
   cafeteria: {
@@ -25,13 +25,26 @@ type Props = {
   };
 };
 
-const ESTADO_INICIAL: EstadoEdicion = { error: null, guardado: false };
+const ESTADO_INICIAL: EstadoEdicion = {
+  error: null,
+  guardado: false,
+  valores: null,
+};
 
 export function FormularioEdicion({ cafeteria }: Props) {
   const [estado, accion, enviando] = useActionState(
     actualizarCafeteria,
     ESTADO_INICIAL,
   );
+
+  // Si hubo error se muestran los valores enviados; si no, los guardados
+  const v = estado.valores ?? {
+    nombre: cafeteria.nombre,
+    zona_horaria: cafeteria.zona_horaria,
+    plan: cafeteria.plan,
+    estado_suscripcion: cafeteria.estado_suscripcion,
+    max_programas: String(cafeteria.max_programas),
+  };
 
   return (
     <form action={accion} className="space-y-4">
@@ -43,29 +56,12 @@ export function FormularioEdicion({ cafeteria }: Props) {
           name="nombre"
           required
           maxLength={80}
-          defaultValue={cafeteria.nombre}
+          defaultValue={v.nombre}
           className={CLASE_INPUT}
         />
       </Campo>
 
-      <Campo id="zona_horaria" etiqueta="Zona horaria">
-        <select
-          id="zona_horaria"
-          name="zona_horaria"
-          defaultValue={cafeteria.zona_horaria}
-          className={CLASE_INPUT}
-        >
-          {/* Si tiene una zona fuera de la lista, se muestra para no perderla */}
-          {!ZONAS_HORARIAS.some((z) => z.valor === cafeteria.zona_horaria) && (
-            <option value={cafeteria.zona_horaria}>{cafeteria.zona_horaria}</option>
-          )}
-          {ZONAS_HORARIAS.map((z) => (
-            <option key={z.valor} value={z.valor}>
-              {z.etiqueta}
-            </option>
-          ))}
-        </select>
-      </Campo>
+      <SelectorZona valorInicial={v.zona_horaria} />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Campo id="plan" etiqueta="Plan">
@@ -74,7 +70,7 @@ export function FormularioEdicion({ cafeteria }: Props) {
             name="plan"
             required
             maxLength={30}
-            defaultValue={cafeteria.plan}
+            defaultValue={v.plan}
             className={CLASE_INPUT}
           />
         </Campo>
@@ -82,7 +78,7 @@ export function FormularioEdicion({ cafeteria }: Props) {
           <select
             id="estado_suscripcion"
             name="estado_suscripcion"
-            defaultValue={cafeteria.estado_suscripcion}
+            defaultValue={v.estado_suscripcion}
             className={CLASE_INPUT}
           >
             <option value="prueba">Prueba</option>
@@ -103,7 +99,7 @@ export function FormularioEdicion({ cafeteria }: Props) {
             min={1}
             max={50}
             required
-            defaultValue={cafeteria.max_programas}
+            defaultValue={v.max_programas}
             className={CLASE_INPUT}
           />
         </Campo>

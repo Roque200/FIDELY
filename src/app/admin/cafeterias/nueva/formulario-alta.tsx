@@ -5,7 +5,6 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import { crearCafeteria, type EstadoAlta } from "@/lib/actions/cafeterias";
 import { crearSlug } from "@/lib/slug";
-import { ZONAS_HORARIAS } from "@/lib/zonas-horarias";
 import {
   Campo,
   CLASE_BOTON,
@@ -13,6 +12,7 @@ import {
   CLASE_INPUT,
   MensajeError,
 } from "@/components/formulario";
+import { SelectorZona } from "@/components/selector-zona";
 import { LinkInvitacion } from "@/components/panel/link-invitacion";
 
 const ESTADO_INICIAL: EstadoAlta = {
@@ -113,20 +113,7 @@ export function FormularioAlta() {
           />
         </Campo>
 
-        <Campo id="zona_horaria" etiqueta="Zona horaria">
-          <select
-            id="zona_horaria"
-            name="zona_horaria"
-            defaultValue={estado.valores.zona_horaria}
-            className={CLASE_INPUT}
-          >
-            {ZONAS_HORARIAS.map((z) => (
-              <option key={z.valor} value={z.valor}>
-                {z.etiqueta}
-              </option>
-            ))}
-          </select>
-        </Campo>
+        <SelectorZona valorInicial={estado.valores.zona_horaria} />
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Campo id="plan" etiqueta="Plan">
