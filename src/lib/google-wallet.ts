@@ -124,7 +124,16 @@ type ProgramaGoogle = ProgramaDiseno & {
   premio: string;
   sellos_requeridos: number;
   activo: boolean;
+  actualizado_en: string;
 };
+
+type CafeteriaGoogle = CafeteriaDiseno & { actualizado_en: string };
+
+// Cambia cuando cambia el diseño del programa o de la cafetería: así Google
+// vuelve a descargar la imagen de los sellos en lugar de usar la guardada
+function versionDiseno(cafeteria: CafeteriaGoogle, programa: ProgramaGoogle) {
+  return `${Date.parse(programa.actualizado_en).toString(36)}${Date.parse(cafeteria.actualizado_en).toString(36)}`;
+}
 
 function construirClase(
   config: Config,
@@ -152,13 +161,14 @@ function construirClase(
 
 function construirObjeto(
   config: Config,
-  cafeteria: CafeteriaDiseno,
+  cafeteria: CafeteriaGoogle,
   programa: ProgramaGoogle,
   tarjeta: { codigo: string; sellos: number; premiosCanjeados: number; cliente: string },
   origen: string,
 ) {
   const d = disenoEfectivo(cafeteria, programa);
   const completa = tarjeta.sellos >= programa.sellos_requeridos;
+  const llenos = Math.min(tarjeta.sellos, programa.sellos_requeridos);
   return {
     id: idObjeto(config, tarjeta.codigo),
     classId: idClase(config, programa.id),
@@ -190,6 +200,15 @@ function construirObjeto(
     linksModuleData: {
       uris: [{ id: "tarjeta", uri: `${origen}/t/${tarjeta.codigo}`, description: "Ver mi tarjeta" }],
     },
+    // Imagen con los sellos (sin datos del cliente)
+    heroImage: {
+      sourceUri: {
+        uri: `${origen}/api/wallet/sellos/${programa.id}/${llenos}.png?v=${versionDiseno(cafeteria, programa)}`,
+      },
+      contentDescription: {
+        defaultValue: { language: "es-MX", value: `${llenos} de ${programa.sellos_requeridos} sellos` },
+      },
+    },
   };
 }
 
@@ -198,7 +217,7 @@ function construirObjeto(
 // ---------------------------------------------------------------------
 
 const COLUMNAS_PROGRAMA =
-  "id, nombre, premio, sellos_requeridos, activo, google_class_id, logo_horizontal_url, logo_cuadrado_url, color_fondo, color_etiquetas, color_texto, icono_sello, icono_sello_url, icono_sello_inactivo, icono_sello_inactivo_url, color_sello_activo, color_sello_inactivo, color_fondo_sello, tipo_codigo";
+  "id, nombre, premio, sellos_requeridos, activo, actualizado_en, google_class_id, logo_horizontal_url, logo_cuadrado_url, color_fondo, color_etiquetas, color_texto, icono_sello, icono_sello_url, icono_sello_inactivo, icono_sello_inactivo_url, color_sello_activo, color_sello_inactivo, color_fondo_sello, tipo_codigo";
 
 const uno = <T,>(x: unknown): T | null =>
   ((Array.isArray(x) ? x[0] : x) as T | undefined) ?? null;
@@ -210,7 +229,7 @@ async function leerTarjeta(codigo: string) {
     .select(
       `id, codigo, sellos_actuales, premios_canjeados, google_object_id, plataforma,
        clientes ( nombre ),
-       cafeterias ( nombre, logo_url, color_fondo, color_texto, color_etiquetas ),
+       cafeterias ( nombre, logo_url, color_fondo, color_texto, color_etiquetas, actualizado_en ),
        programas ( ${COLUMNAS_PROGRAMA} )`,
     )
     .eq("codigo", codigo)
@@ -219,7 +238,7 @@ async function leerTarjeta(codigo: string) {
   if (!data) return null;
 
   const cliente = uno<{ nombre: string }>(data.clientes);
-  const cafeteria = uno<CafeteriaDiseno>(data.cafeterias);
+  const cafeteria = uno<CafeteriaGoogle>(data.cafeterias);
   const programa = uno<ProgramaGoogle & { google_class_id: string | null }>(data.programas);
   if (!cliente || !cafeteria || !programa) return null;
 
@@ -299,12 +318,12 @@ export async function actualizarProgramaGoogle(programaId: string, origen: strin
     const admin = createAdminClient();
     const { data: programa } = await admin
       .from("programas")
-      .select(`${COLUMNAS_PROGRAMA}, cafeterias ( nombre, logo_url, color_fondo, color_texto, color_etiquetas )`)
+      .select(`${COLUMNAS_PROGRAMA}, cafeterias ( nombre, logo_url, color_fondo, color_texto, color_etiquetas, actualizado_en )`)
       .eq("id", programaId)
       .maybeSingle();
     if (!programa?.google_class_id) return;
 
-    const cafeteria = uno<CafeteriaDiseno>(programa.cafeterias);
+    const cafeteria = uno<CafeteriaGoogle>(programa.cafeterias);
     if (!cafeteria) return;
     const p = programa as unknown as ProgramaGoogle;
     await guardar(config, "loyaltyClass", construirClase(config, cafeteria, p, origen));
