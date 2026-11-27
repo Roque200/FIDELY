@@ -3,7 +3,7 @@
 ## Qué es el proyecto
 SaaS multi-tenant de tarjetas de lealtad para cafeterías. Cada cafetería crea su programa (ej. "compra 9, el 10 es gratis"). El cliente final guarda su tarjeta en Apple Wallet o Google Wallet escaneando un QR, sin descargar ninguna app. El barista sella y canjea desde una web app (PWA) escaneando el QR de la tarjeta, y la tarjeta se actualiza sola en el celular del cliente.
 
-Etapa actual: MVP en construcción, publicado en Vercel (`https://fidely-nine.vercel.app`). Ya funciona: login por rol, alta de cafeterías con link de invitación al dueño (`/admin`), programas con límite por plan y diseño de tarjeta por programa (`/panel`), registro público del cliente con su tarjeta web (`/c/[slug]` → `/t/[codigo]`) y escáner del barista para sellar y canjear (`/barista`, instalable como app). Falta Apple/Google Wallet.
+Etapa actual: MVP en construcción, publicado en Vercel (`https://fidely-nine.vercel.app`). Ya funciona: login por rol, alta de cafeterías con link de invitación al dueño (`/admin`), programas con límite por plan y diseño de tarjeta por programa (`/panel`), registro público del cliente con su tarjeta web (`/c/[slug]` → `/t/[codigo]`) y escáner del barista para sellar y canjear (`/barista`, instalable como app), Google Wallet (guardar y actualización tras sellos, canjes y cambios de diseño) y sección Clientes (`/panel/clientes`: búsqueda, sellos, historial y reenvío del link de la tarjeta por WhatsApp o correo, que es como se recupera una tarjeta perdida; el registro público NO muestra tarjetas ya existentes). Falta Apple Wallet.
 
 ## Stack (decidido)
 - Next.js (App Router, TypeScript), con frontend y backend (API routes / Route Handlers) en un solo proyecto.
@@ -58,7 +58,6 @@ Etapa actual: MVP en construcción, publicado en Vercel (`https://fidely-nine.ve
 Después del MVP: notificaciones masivas, varias sucursales completas, niveles, cumpleaños, cobro recurrente, integración con punto de venta.
 
 ## Pendientes / riesgos conocidos
-- Sección **Clientes** en `/panel`: buscar por nombre, teléfono o correo; ver sellos e historial; reenviar el link de su tarjeta por WhatsApp. Es la forma de recuperar una tarjeta perdida (el registro público NO muestra tarjetas ya existentes, para que nadie se quede con los sellos de otro).
 - Envío de la invitación al dueño por correo (hoy es link para copiar/WhatsApp); requiere servicio de correo propio (p. ej. Resend) y dominio.
 - "Olvidé mi contraseña" para dueños y baristas.
 - Alta de baristas y sucursales desde el panel.

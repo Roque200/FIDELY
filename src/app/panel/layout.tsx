@@ -10,9 +10,9 @@ import { MenuUsuario } from "@/components/panel/menu-usuario";
 export const instant = false;
 
 const MENU_DUENO: ItemMenu[] = [
-  { etiqueta: "Tarjetas", icono: "tarjetas", href: "/panel" },
+  { etiqueta: "Tarjetas", icono: "tarjetas", href: "/panel", rutas: ["/panel/programas"] },
   { etiqueta: "Escáner", icono: "escaner", href: "/barista" },
-  { etiqueta: "Clientes", icono: "clientes" },
+  { etiqueta: "Clientes", icono: "clientes", href: "/panel/clientes" },
   { etiqueta: "Informes", icono: "informes" },
   { etiqueta: "Sucursales", icono: "sucursales" },
   { etiqueta: "Usuarios", icono: "usuarios" },

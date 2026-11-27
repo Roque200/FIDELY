@@ -36,7 +36,13 @@ export type ItemMenu = {
   icono: NombreIcono;
   // Sin href = sección que todavía no existe (se muestra con "Pronto")
   href?: string;
+  // Rutas que también marcan la opción como activa. Si se da, href solo
+  // cuenta exacto (para que "/panel" no se marque en todo el panel).
+  rutas?: string[];
 };
+
+const coincide = (ruta: string, base: string) =>
+  ruta === base || ruta.startsWith(`${base}/`);
 
 type Props = {
   items: ItemMenu[];
@@ -71,8 +77,9 @@ export function Estructura({ items, usuario, children }: Props) {
           );
         }
 
-        const activo =
-          pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const activo = item.rutas
+          ? pathname === item.href || item.rutas.some((r) => coincide(pathname, r))
+          : coincide(pathname, item.href);
 
         return (
           <Link
