@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Bookmark, Coffee, Gift, PartyPopper } from "lucide-react";
+import { Bookmark, Coffee, Gift, PartyPopper, TriangleAlert, Wallet } from "lucide-react";
 import { tarjetaPublica } from "@/lib/publico";
 import { disenoEfectivo } from "@/lib/diseno";
 import { generarCodigoSvg } from "@/lib/codigos";
+import { configGoogle } from "@/lib/google-wallet";
 import { PantallaCarga } from "@/components/pantalla-carga";
 import { TarjetaDiseno } from "@/components/panel/tarjeta-diseno";
 
@@ -42,7 +43,7 @@ async function Contenido({
   searchParams: PageProps<"/t/[codigo]">["searchParams"];
 }) {
   const { codigo } = await params;
-  const { nueva } = await searchParams;
+  const { nueva, wallet } = await searchParams;
   const tarjeta = await tarjetaPublica(codigo);
   if (!tarjeta) notFound();
 
@@ -62,6 +63,20 @@ async function Contenido({
           <p className="flex items-start gap-2">
             <Bookmark className="mt-0.5 h-4 w-4 shrink-0" />
             Guarda esta página (en favoritos o en tu pantalla de inicio): es tu tarjeta.
+          </p>
+        </div>
+      )}
+
+      {(wallet === "error" || wallet === "no-disponible") && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"
+        >
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            {wallet === "error"
+              ? "No pudimos preparar tu tarjeta para Google Wallet. Intenta de nuevo en un momento."
+              : "Google Wallet no está disponible por ahora."}
           </p>
         </div>
       )}
@@ -99,6 +114,17 @@ async function Contenido({
         <p className="rounded-xl bg-stone-50 p-3 text-center text-xs text-stone-500 ring-1 ring-stone-200">
           Este programa está pausado por la cafetería; por ahora no se pueden agregar sellos.
         </p>
+      )}
+
+      {configGoogle() && (
+        // Sin prefetch: preparar la tarjeta en Google solo cuando la piden
+        <a
+          href={`/api/wallet/google/${tarjeta.codigo}`}
+          className="mx-auto flex w-full max-w-[320px] items-center justify-center gap-2 rounded-full bg-black px-5 py-3 font-medium text-white transition hover:bg-stone-800"
+        >
+          <Wallet className="h-5 w-5" />
+          Agregar a Google Wallet
+        </a>
       )}
 
       <div className="space-y-1 text-center text-xs text-stone-500">

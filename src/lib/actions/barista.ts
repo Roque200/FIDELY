@@ -1,6 +1,9 @@
 "use server";
 
+import { after } from "next/server";
 import { getPerfil } from "@/lib/auth";
+import { actualizarTarjetaGoogle } from "@/lib/google-wallet";
+import { origenActual } from "@/lib/origen";
 import { createClient } from "@/lib/supabase/server";
 
 export type TarjetaBarista = {
@@ -104,6 +107,10 @@ async function ejecutar(
     }
     return { ok: false, error: `No se pudo completar: ${error.message}` };
   }
+
+  // La tarjeta en la cartera del cliente se actualiza después de responder
+  const origen = await origenActual();
+  after(() => actualizarTarjetaGoogle(codigo, origen));
 
   const tarjeta = await leerTarjeta(codigo);
   if (!tarjeta) return { ok: false, error: NO_ENCONTRADA };

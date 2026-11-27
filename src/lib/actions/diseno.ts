@@ -1,6 +1,9 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { after } from "next/server";
+import { actualizarProgramaGoogle } from "@/lib/google-wallet";
+import { origenActual } from "@/lib/origen";
 import { getPerfil } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -134,6 +137,10 @@ export async function guardarDiseno(
   if (!data || data.length === 0) {
     return fallo("El programa no existe o no es de tu cafetería.");
   }
+
+  // Las tarjetas ya guardadas en Google Wallet se actualizan después de responder
+  const origen = await origenActual();
+  after(() => actualizarProgramaGoogle(id, origen));
 
   // Que la página (y la vista previa) muestren lo guardado
   refresh();
