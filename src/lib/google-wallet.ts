@@ -2,6 +2,7 @@ import "server-only";
 import { createSign } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { disenoEfectivo, type CafeteriaDiseno, type ProgramaDiseno, type TipoCodigo } from "@/lib/diseno";
+import { origenPublico } from "@/lib/origen";
 
 // Google Wallet: una Loyalty Class por programa y un Loyalty Object por tarjeta.
 // Las llaves viven en variables de entorno de Vercel:
@@ -147,7 +148,7 @@ function construirClase(
     issuerName: cafeteria.nombre,
     programName: programa.nombre,
     programLogo: {
-      sourceUri: { uri: d.logoCuadrado ?? `${origen}/icono-512.png` },
+      sourceUri: { uri: d.logoCuadrado ?? `${origenPublico(origen)}/icono-512.png` },
       contentDescription: {
         defaultValue: { language: "es-MX", value: `Logo de ${cafeteria.nombre}` },
       },
@@ -198,12 +199,12 @@ function construirObjeto(
       },
     ],
     linksModuleData: {
-      uris: [{ id: "tarjeta", uri: `${origen}/t/${tarjeta.codigo}`, description: "Ver mi tarjeta" }],
+      uris: [{ id: "tarjeta", uri: `${origenPublico(origen)}/t/${tarjeta.codigo}`, description: "Ver mi tarjeta" }],
     },
     // Imagen con los sellos (sin datos del cliente)
     heroImage: {
       sourceUri: {
-        uri: `${origen}/api/wallet/sellos/${programa.id}/${llenos}.png?v=${versionDiseno(cafeteria, programa)}`,
+        uri: `${origenPublico(origen)}/api/wallet/sellos/${programa.id}/${llenos}.png?v=${versionDiseno(cafeteria, programa)}`,
       },
       contentDescription: {
         defaultValue: { language: "es-MX", value: `${llenos} de ${programa.sellos_requeridos} sellos` },
