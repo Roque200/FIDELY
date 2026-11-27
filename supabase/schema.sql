@@ -291,6 +291,20 @@ as $$
 $$;
 
 
+-- Busca el id de un usuario de Auth por su correo (sin distinguir mayúsculas).
+-- Solo la usa el backend (service_role) antes de invitar a alguien, para no
+-- tocar cuentas que ya existen.
+create or replace function public.usuario_id_por_correo(p_correo text)
+returns uuid
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select id from auth.users where lower(email) = lower(trim(p_correo)) limit 1;
+$$;
+
+
 -- ---------------------------------------------------------------------
 --  6. ROW LEVEL SECURITY (cada cafetería solo ve lo suyo)
 --     Nota: el backend (API routes de Next) usa la service_role key,

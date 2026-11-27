@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { Store } from "lucide-react";
+import Link from "next/link";
+import { ChevronRight, Store } from "lucide-react";
 import { verificarAcceso } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PantallaCarga } from "@/components/pantalla-carga";
@@ -51,7 +52,7 @@ async function Contenido() {
       <CabeceraSeccion
         titulo="Cafeterías"
         descripcion={`${cafeterias.length} registrada${cafeterias.length === 1 ? "" : "s"}`}
-        accion={<BotonAgregar pronto />}
+        accion={<BotonAgregar href="/admin/cafeterias/nueva" />}
       />
 
       {cafeterias.length === 0 ? (
@@ -76,7 +77,10 @@ async function Contenido() {
                 <th className="px-4 py-3 font-medium">Slug</th>
                 <th className="px-4 py-3 font-medium">Plan</th>
                 <th className="px-4 py-3 font-medium">Programas máx.</th>
-                <th className="px-4 py-3 font-medium md:px-6">Estado</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="w-12 px-4 py-3 md:px-6">
+                  <span className="sr-only">Ver</span>
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -91,9 +95,12 @@ async function Contenido() {
                           className="h-8 w-8 shrink-0 rounded-lg ring-1 ring-stone-200"
                           style={{ backgroundColor: c.color_fondo }}
                         />
-                        <span className="font-medium text-stone-900">
+                        <Link
+                          href={`/admin/cafeterias/${c.id}`}
+                          className="font-medium text-stone-900 hover:text-amber-900 hover:underline"
+                        >
                           {c.nombre}
-                        </span>
+                        </Link>
                       </div>
                     </td>
                     <td className="px-4 py-3 font-mono text-stone-600">
@@ -105,8 +112,17 @@ async function Contenido() {
                     <td className="px-4 py-3 text-stone-600">
                       {c.max_programas}
                     </td>
-                    <td className="px-4 py-3 md:px-6">
+                    <td className="px-4 py-3">
                       <EstadoPill texto={estado.texto} tono={estado.tono} />
+                    </td>
+                    <td className="px-4 py-3 md:px-6">
+                      <Link
+                        href={`/admin/cafeterias/${c.id}`}
+                        aria-label={`Ver ${c.nombre}`}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-700"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Link>
                     </td>
                   </tr>
                 );

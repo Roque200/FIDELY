@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CreditCard } from "lucide-react";
+import { CreditCard, TriangleAlert } from "lucide-react";
 import { verificarAcceso } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PantallaCarga } from "@/components/pantalla-carga";
@@ -62,9 +62,20 @@ async function Contenido() {
     <>
       <CabeceraSeccion
         titulo="Tarjetas"
-        descripcion={`${activos} de ${maximo} programa${maximo === 1 ? "" : "s"} activo${maximo === 1 ? "" : "s"} en tu plan`}
+        descripcion={`${activos} programa${activos === 1 ? "" : "s"} activo${activos === 1 ? "" : "s"} · tu plan permite ${maximo}`}
         accion={<BotonAgregar pronto />}
       />
+
+      {activos > maximo && (
+        <div className="mx-4 mt-4 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200 md:mx-6">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            Tienes más programas activos de los que permite tu plan. Los que ya
+            están activos siguen funcionando, pero no podrás activar otro hasta
+            desactivar alguno.
+          </p>
+        </div>
+      )}
 
       {programas.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">

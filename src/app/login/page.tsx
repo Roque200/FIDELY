@@ -42,6 +42,16 @@ async function AvisoSesion({
   }
 
   const { error } = await searchParams;
+
+  if (error === "link-invalido" && !perfil) {
+    return (
+      <div className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
+        El link no es válido, ya se usó o ya venció. Pide uno nuevo a quien te
+        invitó.
+      </div>
+    );
+  }
+
   const sinAcceso = error === "sin-acceso" || perfil?.tipo === "sin_acceso";
 
   if (!sinAcceso) return null;

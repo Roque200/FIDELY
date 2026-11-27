@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // Rutas que requieren sesión iniciada
-const RUTAS_PROTEGIDAS = ["/panel", "/barista", "/admin"];
+const RUTAS_PROTEGIDAS = ["/panel", "/barista", "/admin", "/bienvenida"];
 
 function esRutaProtegida(pathname: string) {
   return RUTAS_PROTEGIDAS.some(
