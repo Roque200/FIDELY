@@ -64,7 +64,7 @@ Después del MVP: notificaciones masivas, varias sucursales completas, niveles, 
 
 ## Cómo trabajar conmigo (Roque)
 - Háblame en español, informal.
-- Cuando corrijas o cambies código, dame el archivo completo, no fragmentos.
+- No me pegues en el chat el código que cambiaste; los cambios van directo al repo. Solo si yo te pido un archivo, dámelo completo, no fragmentos. Los scripts SQL que yo deba correr en Supabase sí van en el chat.
 - Un comando o paso a la vez, y espera mi confirmación antes de seguir.
 - No generes código de pruebas, archivos de ejemplo ni manuales/documentación a menos que yo los pida.
 - Cada vez que agregues o cambies algo en el programa, haz un debug exhaustivo antes de darlo por terminado: build, lint y tipos, levantar la app y probar el flujo de punta a punta contra un Supabase local con el `schema.sql`, incluyendo casos de error y permisos (RLS). Los scripts que uses para eso van fuera del repo y no se suben.
