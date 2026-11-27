@@ -105,7 +105,7 @@ async function Contenido({
             {programasActivos === 1 ? "" : "s"} de {cafeteria.max_programas} permitido
             {cafeteria.max_programas === 1 ? "" : "s"}.
           </p>
-          <FormularioEdicion key={cafeteria.actualizado_en} cafeteria={cafeteria} />
+          <FormularioEdicion cafeteria={cafeteria} version={cafeteria.actualizado_en} />
         </section>
 
         <section className="space-y-4 rounded-xl p-4 ring-1 ring-stone-200 md:p-5">

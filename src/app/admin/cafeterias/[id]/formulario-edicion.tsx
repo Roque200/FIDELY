@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import {
   actualizarCafeteria,
@@ -23,6 +23,9 @@ type Props = {
     estado_suscripcion: string;
     max_programas: number;
   };
+  // Cambia cada vez que se guarda (actualizado_en): los campos se vuelven a
+  // crear con lo guardado, sin perder el aviso de "Cambios guardados"
+  version: string;
 };
 
 const ESTADO_INICIAL: EstadoEdicion = {
@@ -31,7 +34,7 @@ const ESTADO_INICIAL: EstadoEdicion = {
   valores: null,
 };
 
-export function FormularioEdicion({ cafeteria }: Props) {
+export function FormularioEdicion({ cafeteria, version }: Props) {
   const [estado, accion, enviando] = useActionState(
     actualizarCafeteria,
     ESTADO_INICIAL,
@@ -46,9 +49,19 @@ export function FormularioEdicion({ cafeteria }: Props) {
     max_programas: String(cafeteria.max_programas),
   };
 
+  // El aviso de guardado se quita en cuanto vuelven a editar algo
+  const [editado, setEditado] = useState(false);
+  const [estadoPrevio, setEstadoPrevio] = useState(estado);
+  if (estado !== estadoPrevio) {
+    setEstadoPrevio(estado);
+    setEditado(false);
+  }
+
   return (
-    <form action={accion} className="space-y-4">
+    <form action={accion} onInput={() => setEditado(true)} className="space-y-4">
       <input type="hidden" name="id" value={cafeteria.id} />
+
+      <div key={version} className="space-y-4">
 
       <Campo id="nombre" etiqueta="Nombre">
         <input
@@ -104,11 +117,12 @@ export function FormularioEdicion({ cafeteria }: Props) {
           />
         </Campo>
       </div>
+      </div>
 
       <MensajeError texto={estado.error} />
 
       <div className="flex items-center justify-end gap-3">
-        {estado.guardado && !enviando && (
+        {estado.guardado && !enviando && !editado && (
           <span className="flex items-center gap-1.5 text-sm text-emerald-700">
             <CheckCircle2 className="h-4 w-4" />
             Cambios guardados
