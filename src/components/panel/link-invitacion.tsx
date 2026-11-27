@@ -7,13 +7,18 @@ type Props = {
   link: string;
   dueno: string;
   cafeteria: string;
+  // Textos para otros casos (ej. invitación de barista)
+  mensaje?: string;
+  ayuda?: string;
 };
 
 // Muestra el link de invitación con botones para copiar y mandar por WhatsApp
-export function LinkInvitacion({ link, dueno, cafeteria }: Props) {
+export function LinkInvitacion({ link, dueno, cafeteria, mensaje: mensajePropio, ayuda }: Props) {
   const [copiado, setCopiado] = useState(false);
 
-  const mensaje = `Hola ${dueno}, ya está lista la cuenta de ${cafeteria} en Fidely. Entra a este link para crear tu contraseña: ${link}`;
+  const mensaje =
+    mensajePropio ??
+    `Hola ${dueno}, ya está lista la cuenta de ${cafeteria} en Fidely. Entra a este link para crear tu contraseña: ${link}`;
 
   async function copiar() {
     try {
@@ -31,8 +36,8 @@ export function LinkInvitacion({ link, dueno, cafeteria }: Props) {
       <div>
         <p className="font-medium text-amber-950">Link de invitación</p>
         <p className="text-sm text-amber-900/80">
-          Mándaselo a {dueno}. Sirve una sola vez y vence; si no lo usa a
-          tiempo, genera uno nuevo desde la cafetería.
+          {ayuda ??
+            `Mándaselo a ${dueno}. Sirve una sola vez y vence; si no lo usa a tiempo, genera uno nuevo desde la cafetería.`}
         </p>
       </div>
       <input

@@ -14,8 +14,8 @@ const MENU_DUENO: ItemMenu[] = [
   { etiqueta: "Escáner", icono: "escaner", href: "/barista" },
   { etiqueta: "Clientes", icono: "clientes", href: "/panel/clientes" },
   { etiqueta: "Informes", icono: "informes" },
-  { etiqueta: "Sucursales", icono: "sucursales" },
-  { etiqueta: "Usuarios", icono: "usuarios" },
+  { etiqueta: "Sucursales", icono: "sucursales", href: "/panel/sucursales" },
+  { etiqueta: "Usuarios", icono: "usuarios", href: "/panel/usuarios" },
   { etiqueta: "Configuración", icono: "configuracion" },
 ];
 

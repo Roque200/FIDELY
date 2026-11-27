@@ -600,9 +600,10 @@ grant insert (cafeteria_id, nombre, direccion, activa),
       delete
   on public.sucursales to authenticated;
 
--- Staff: el dueño edita estas columnas (no id ni cafeteria_id).
+-- Staff: el dueño edita estas columnas (no id, cafeteria_id ni rol: solo
+-- invita baristas y no puede volver dueño a nadie).
 -- Las altas las hace el backend al invitar al usuario.
-grant update (nombre, sucursal_id, rol, activo) on public.staff to authenticated;
+grant update (nombre, sucursal_id, activo) on public.staff to authenticated;
 
 -- Programas: información y diseño (google_class_id solo lo escribe el backend)
 grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo,
