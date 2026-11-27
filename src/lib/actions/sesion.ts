@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
+import { destinoSeguro } from "@/lib/destino";
 
 export type EstadoLogin = {
   error: string | null;
@@ -76,6 +78,37 @@ export async function definirContrasena(
 
   // La página de inicio revisa el rol y lo manda a su sección
   redirect("/");
+}
+
+const TIPOS_LINK: EmailOtpType[] = ["invite", "magiclink", "email", "recovery"];
+
+// Usa el link de invitación o de acceso. Se llama al presionar "Continuar"
+// (no al abrir el link) para que las vistas previas de WhatsApp, correo, etc.
+// no gasten el link de un solo uso.
+export async function confirmarLink(formData: FormData) {
+  const tokenHash = String(formData.get("token_hash") ?? "");
+  const tipo = String(formData.get("type") ?? "") as EmailOtpType;
+  const next = destinoSeguro(String(formData.get("next") ?? ""));
+
+  if (!tokenHash || !TIPOS_LINK.includes(tipo)) {
+    redirect("/login?error=link-invalido");
+  }
+
+  const supabase = await createClient();
+
+  // Si había otra sesión abierta en este navegador, se cierra primero
+  await supabase.auth.signOut({ scope: "local" });
+
+  const { error } = await supabase.auth.verifyOtp({
+    type: tipo,
+    token_hash: tokenHash,
+  });
+
+  if (error) {
+    redirect("/login?error=link-invalido");
+  }
+
+  redirect(next);
 }
 
 export async function cerrarSesion() {
