@@ -1,12 +1,18 @@
 import { Suspense } from "react";
 import { verificarAcceso } from "@/lib/auth";
-import { Encabezado } from "@/components/encabezado";
 import { PantallaCarga } from "@/components/pantalla-carga";
 import { Redirigir } from "@/components/redirigir";
+import { Estructura, type ItemMenu } from "@/components/panel/estructura";
+import { MenuUsuario } from "@/components/panel/menu-usuario";
 
 // Sección protegida: depende de la sesión,
 // así que no se valida como navegación instantánea.
 export const instant = false;
+
+const MENU_ADMIN: ItemMenu[] = [
+  { etiqueta: "Cafeterías", icono: "cafeterias", href: "/admin" },
+  { etiqueta: "Configuración", icono: "configuracion" },
+];
 
 export default function AdminLayout({ children }: LayoutProps<"/admin">) {
   return (
@@ -25,9 +31,16 @@ async function SeccionAdmin({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-stone-50">
-      <Encabezado titulo="Super admin" subtitulo={acceso.perfil.correo} />
-      <main className="flex-1 p-4">{children}</main>
-    </div>
+    <Estructura
+      items={MENU_ADMIN}
+      usuario={
+        <MenuUsuario
+          nombre={acceso.perfil.correo ?? "Super admin"}
+          detalle="Super admin"
+        />
+      }
+    >
+      {children}
+    </Estructura>
   );
 }

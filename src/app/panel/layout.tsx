@@ -1,12 +1,23 @@
 import { Suspense } from "react";
 import { verificarAcceso } from "@/lib/auth";
-import { Encabezado } from "@/components/encabezado";
 import { PantallaCarga } from "@/components/pantalla-carga";
 import { Redirigir } from "@/components/redirigir";
+import { Estructura, type ItemMenu } from "@/components/panel/estructura";
+import { MenuUsuario } from "@/components/panel/menu-usuario";
 
 // Sección protegida: depende de la sesión,
 // así que no se valida como navegación instantánea.
 export const instant = false;
+
+const MENU_DUENO: ItemMenu[] = [
+  { etiqueta: "Tarjetas", icono: "tarjetas", href: "/panel" },
+  { etiqueta: "Escáner", icono: "escaner", href: "/barista" },
+  { etiqueta: "Clientes", icono: "clientes" },
+  { etiqueta: "Informes", icono: "informes" },
+  { etiqueta: "Sucursales", icono: "sucursales" },
+  { etiqueta: "Usuarios", icono: "usuarios" },
+  { etiqueta: "Configuración", icono: "configuracion" },
+];
 
 export default function PanelLayout({ children }: LayoutProps<"/panel">) {
   return (
@@ -25,9 +36,13 @@ async function SeccionDueno({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-stone-50">
-      <Encabezado titulo="Panel" subtitulo={acceso.perfil.nombre} />
-      <main className="flex-1 p-4">{children}</main>
-    </div>
+    <Estructura
+      items={MENU_DUENO}
+      usuario={
+        <MenuUsuario nombre={acceso.perfil.nombre} detalle="Dueño" />
+      }
+    >
+      {children}
+    </Estructura>
   );
 }
