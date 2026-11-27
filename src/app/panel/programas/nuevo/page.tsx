@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { verificarAcceso } from "@/lib/auth";
 import { PantallaCarga } from "@/components/pantalla-carga";
 import { CabeceraSeccion } from "@/components/panel/cabecera-seccion";
-import { generarQrSvg } from "@/components/panel/tarjeta-wallet";
+import { generarCodigoSvg } from "@/lib/codigos";
+import { disenoEfectivo } from "@/lib/diseno";
 import { FormularioPrograma } from "../formulario-programa";
 import { datosCafeteria } from "../datos";
+import { Pestanas } from "../[id]/pestanas";
 
 export const metadata: Metadata = {
   title: "Nuevo programa",
@@ -27,10 +29,9 @@ async function Contenido() {
   const acceso = await verificarAcceso("dueno");
   if (!acceso.permitido) return null;
 
-  const [{ diseno, maximo, activosOtros, totalProgramas }, qr] = await Promise.all([
-    datosCafeteria(acceso.perfil.cafeteriaId),
-    generarQrSvg("fidely:vista-previa"),
-  ]);
+  const { diseno, maximo, activosOtros, totalProgramas } = await datosCafeteria(
+    acceso.perfil.cafeteriaId,
+  );
 
   return (
     <>
@@ -39,12 +40,13 @@ async function Contenido() {
         descripcion="Define cuántos sellos necesita tu cliente y qué se gana."
         regreso={{ href: "/panel", texto: "Tarjetas" }}
       />
+      <Pestanas activa="informacion" />
       {/* key: Next guarda en memoria las páginas visitadas; si cambian los
           datos (se creó otro programa), el formulario empieza de cero */}
       <FormularioPrograma
         key={`${totalProgramas}-${activosOtros}-${maximo}`}
-        cafeteria={diseno}
-        qr={qr}
+        diseno={disenoEfectivo(diseno)}
+        codigo={generarCodigoSvg("qr", "fidely:vista-previa")}
         activosOtros={activosOtros}
         maximo={maximo}
         tarjetas={0}

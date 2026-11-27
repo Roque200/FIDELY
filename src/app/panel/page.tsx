@@ -7,7 +7,9 @@ import { PantallaCarga } from "@/components/pantalla-carga";
 import { CabeceraSeccion } from "@/components/panel/cabecera-seccion";
 import { BotonAgregar } from "@/components/panel/boton-agregar";
 import { EstadoPill } from "@/components/panel/estado-pill";
-import { TarjetaWallet } from "@/components/panel/tarjeta-wallet";
+import { TarjetaDiseno } from "@/components/panel/tarjeta-diseno";
+import { disenoEfectivo } from "@/lib/diseno";
+import { generarCodigoSvg } from "@/lib/codigos";
 
 // Depende de la sesión y el layout puede no pintarla (si no tiene acceso),
 // así que no se valida como navegación instantánea.
@@ -41,7 +43,9 @@ async function Contenido() {
       .single(),
     supabase
       .from("programas")
-      .select("id, nombre, premio, sellos_requeridos, activo")
+      .select(
+        "id, nombre, premio, sellos_requeridos, activo, logo_horizontal_url, logo_cuadrado_url, color_fondo, color_etiquetas, color_texto, icono_sello, icono_sello_url, icono_sello_inactivo, icono_sello_inactivo_url, color_sello_activo, color_sello_inactivo, color_fondo_sello, tipo_codigo",
+      )
       .eq("cafeteria_id", cafeteriaId)
       .order("activo", { ascending: false })
       .order("creado_en", { ascending: true }),
@@ -106,10 +110,13 @@ async function Contenido() {
                 aria-label={`Editar ${programa.nombre}`}
                 className={`block w-full max-w-[300px] rounded-2xl transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-800 ${programa.activo ? "" : "opacity-60"}`}
               >
-                <TarjetaWallet
-                  cafeteria={cafeteria}
+                <TarjetaDiseno
+                  diseno={disenoEfectivo(cafeteria, programa)}
                   programa={programa}
-                  valorQr={`fidely:vista-previa:${programa.id}`}
+                  codigo={generarCodigoSvg(
+                    disenoEfectivo(cafeteria, programa).tipoCodigo,
+                    `fidely:vista-previa:${programa.id}`,
+                  )}
                 />
               </Link>
               <EstadoPill

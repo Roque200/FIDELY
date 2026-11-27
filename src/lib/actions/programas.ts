@@ -103,5 +103,6 @@ export async function guardarPrograma(
     return fallo("El programa no existe o no es de tu cafetería.");
   }
 
-  redirect("/panel");
+  // Programa nuevo: sigue el diseño de su tarjeta. Edición: de regreso a la lista.
+  redirect(id ? "/panel" : `/panel/programas/${data[0].id}/diseno?nuevo=1`);
 }

@@ -15,10 +15,8 @@ import {
   CLASE_INPUT,
   MensajeError,
 } from "@/components/formulario";
-import {
-  TarjetaVisual,
-  type DisenoCafeteria,
-} from "@/components/panel/tarjeta-visual";
+import { TarjetaDiseno } from "@/components/panel/tarjeta-diseno";
+import type { DisenoTarjeta } from "@/lib/diseno";
 
 type Props = {
   programa?: {
@@ -30,8 +28,9 @@ type Props = {
     max_sellos_por_dia: number;
     activo: boolean;
   };
-  cafeteria: DisenoCafeteria;
-  qr: string;
+  // Diseño de la tarjeta y su código ya generado (para la vista previa)
+  diseno: DisenoTarjeta;
+  codigo: string;
   // Programas activos de la cafetería sin contar este, y el máximo del plan
   activosOtros: number;
   maximo: number;
@@ -41,8 +40,8 @@ type Props = {
 
 export function FormularioPrograma({
   programa,
-  cafeteria,
-  qr,
+  diseno,
+  codigo,
   activosOtros,
   maximo,
   tarjetas,
@@ -94,14 +93,14 @@ export function FormularioPrograma({
         <div className="lg:sticky lg:top-6">
           <p className="mb-2 text-sm font-medium text-stone-500">Vista previa</p>
           <div className="mx-auto max-w-[300px]">
-            <TarjetaVisual
-              cafeteria={cafeteria}
+            <TarjetaDiseno
+              diseno={diseno}
               programa={{
                 nombre: vista.nombre || "Nombre del programa",
                 premio: vista.premio || "Tu premio",
                 sellos_requeridos: Number(vista.sellos),
               }}
-              qr={qr}
+              codigo={codigo}
             />
           </div>
           <p className="mt-2 text-center text-xs text-stone-400">

@@ -10,6 +10,7 @@ create type public.rol_staff as enum ('dueno', 'barista');
 create type public.plataforma_wallet as enum ('apple', 'google');
 create type public.tipo_movimiento as enum ('sello', 'canje', 'ajuste');
 create type public.estado_suscripcion as enum ('prueba', 'activa', 'vencida', 'cancelada');
+create type public.tipo_codigo as enum ('qr', 'aztec', 'pdf417', 'code128');   -- los que aceptan Apple y Google Wallet
 
 
 -- ---------------------------------------------------------------------
@@ -82,8 +83,34 @@ create table public.programas (
   max_sellos_por_dia  int not null default 1 check (max_sellos_por_dia >= 1),
   google_class_id     text unique,                          -- Loyalty Class en Google Wallet
   activo              boolean not null default true,
+  -- Diseño de la tarjeta (los colores en null usan los de la cafetería)
+  logo_horizontal_url      text,                            -- Apple Wallet
+  logo_cuadrado_url        text,                            -- Google Wallet
+  color_fondo              text,
+  color_etiquetas          text,
+  color_texto              text,
+  icono_sello              text not null default 'cafe',    -- clave del catálogo de íconos
+  icono_sello_url          text,                            -- archivo propio (opcional)
+  icono_sello_inactivo     text not null default 'cafe',
+  icono_sello_inactivo_url text,
+  color_sello_activo       text,
+  color_sello_inactivo     text,
+  color_fondo_sello        text,
+  tipo_codigo              public.tipo_codigo not null default 'qr',
   creado_en           timestamptz not null default now(),
-  actualizado_en      timestamptz not null default now()
+  actualizado_en      timestamptz not null default now(),
+  constraint programa_color_fondo_formato          check (color_fondo is null or color_fondo ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_color_etiquetas_formato      check (color_etiquetas is null or color_etiquetas ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_color_texto_formato          check (color_texto is null or color_texto ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_color_sello_activo_formato   check (color_sello_activo is null or color_sello_activo ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_color_sello_inactivo_formato check (color_sello_inactivo is null or color_sello_inactivo ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_color_fondo_sello_formato    check (color_fondo_sello is null or color_fondo_sello ~ '^#[0-9A-Fa-f]{6}$'),
+  constraint programa_logo_horizontal_url_formato      check (logo_horizontal_url is null or (logo_horizontal_url ~ '^https?://' and length(logo_horizontal_url) <= 500)),
+  constraint programa_logo_cuadrado_url_formato        check (logo_cuadrado_url is null or (logo_cuadrado_url ~ '^https?://' and length(logo_cuadrado_url) <= 500)),
+  constraint programa_icono_sello_url_formato          check (icono_sello_url is null or (icono_sello_url ~ '^https?://' and length(icono_sello_url) <= 500)),
+  constraint programa_icono_sello_inactivo_url_formato check (icono_sello_inactivo_url is null or (icono_sello_inactivo_url ~ '^https?://' and length(icono_sello_inactivo_url) <= 500)),
+  constraint programa_icono_sello_formato          check (icono_sello ~ '^[a-z0-9-]{1,30}$'),
+  constraint programa_icono_sello_inactivo_formato check (icono_sello_inactivo ~ '^[a-z0-9-]{1,30}$')
 );
 
 -- Clientes finales (uno por cafetería; cada negocio es dueño de su lista)
@@ -577,9 +604,15 @@ grant insert (cafeteria_id, nombre, direccion, activa),
 -- Las altas las hace el backend al invitar al usuario.
 grant update (nombre, sucursal_id, rol, activo) on public.staff to authenticated;
 
--- Programas: google_class_id solo lo escribe el backend
-grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo),
-      update (nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
+-- Programas: información y diseño (google_class_id solo lo escribe el backend)
+grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo,
+              logo_horizontal_url, logo_cuadrado_url, color_fondo, color_etiquetas, color_texto,
+              icono_sello, icono_sello_url, icono_sello_inactivo, icono_sello_inactivo_url,
+              color_sello_activo, color_sello_inactivo, color_fondo_sello, tipo_codigo),
+      update (nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo,
+              logo_horizontal_url, logo_cuadrado_url, color_fondo, color_etiquetas, color_texto,
+              icono_sello, icono_sello_url, icono_sello_inactivo, icono_sello_inactivo_url,
+              color_sello_activo, color_sello_inactivo, color_fondo_sello, tipo_codigo)
   on public.programas to authenticated;
 
 -- Funciones que usan las políticas RLS y la app del barista
@@ -590,3 +623,46 @@ grant execute on function
   public.registrar_sello(text, uuid),
   public.canjear_premio(text, uuid)
 to authenticated;
+
+
+-- ---------------------------------------------------------------------
+--  9. ALMACENAMIENTO DE IMÁGENES (Supabase Storage)
+--     Logos e íconos de las tarjetas. Bucket público de lectura (Wallet
+--     necesita descargar las imágenes). Cada dueño solo puede subir,
+--     cambiar o borrar dentro de la carpeta de su cafetería.
+-- ---------------------------------------------------------------------
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('disenos', 'disenos', true, 1048576, array['image/png', 'image/jpeg'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+create policy "disenos_subir_dueno" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'disenos'
+    and public.es_dueno()
+    and (storage.foldername(name))[1] = public.mi_cafeteria_id()::text
+  );
+
+create policy "disenos_cambiar_dueno" on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'disenos'
+    and public.es_dueno()
+    and (storage.foldername(name))[1] = public.mi_cafeteria_id()::text
+  )
+  with check (
+    bucket_id = 'disenos'
+    and public.es_dueno()
+    and (storage.foldername(name))[1] = public.mi_cafeteria_id()::text
+  );
+
+create policy "disenos_borrar_dueno" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'disenos'
+    and public.es_dueno()
+    and (storage.foldername(name))[1] = public.mi_cafeteria_id()::text
+  );
