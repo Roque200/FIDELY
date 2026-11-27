@@ -13,6 +13,8 @@ type Props = {
   variante?: "apple" | "google";
   // Sellos que se pintan como ejemplo en la vista previa
   sellosMuestra?: number;
+  // Marca el código como de ejemplo (para que nadie lo confunda con uno real)
+  codigoEjemplo?: boolean;
 };
 
 // Dibujo de la tarjeta como se ve en la cartera del cliente.
@@ -23,6 +25,7 @@ export function TarjetaDiseno({
   codigo,
   variante = "apple",
   sellosMuestra,
+  codigoEjemplo = false,
 }: Props) {
   // Mientras escriben en el formulario puede venir vacío o fuera de rango
   const total = Math.min(50, Math.max(1, Math.floor(programa.sellos_requeridos) || 1));
@@ -123,12 +126,21 @@ export function TarjetaDiseno({
 
       {/* Código */}
       <div className="flex justify-center px-4 pb-5 pt-4">
-        <div
-          className={`rounded-xl bg-white p-2.5 [&_svg]:h-full [&_svg]:w-full ${
-            codigoAncho ? "h-20 w-full max-w-[230px]" : "h-28 w-28"
-          }`}
-          dangerouslySetInnerHTML={{ __html: codigo }}
-        />
+        <div className="relative">
+          <div
+            className={`rounded-xl bg-white p-2.5 [&_svg]:h-full [&_svg]:w-full ${
+              codigoAncho ? "h-20 w-[230px] max-w-full" : "h-28 w-28"
+            } ${codigoEjemplo ? "opacity-30" : ""}`}
+            dangerouslySetInnerHTML={{ __html: codigo }}
+          />
+          {codigoEjemplo && (
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="rounded bg-stone-900/80 px-2 py-0.5 text-[11px] font-semibold tracking-widest text-white">
+                EJEMPLO
+              </span>
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );

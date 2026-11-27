@@ -10,6 +10,8 @@ import { EstadoPill } from "@/components/panel/estado-pill";
 import { TarjetaDiseno } from "@/components/panel/tarjeta-diseno";
 import { disenoEfectivo } from "@/lib/diseno";
 import { generarCodigoSvg } from "@/lib/codigos";
+import { origenActual } from "@/lib/origen";
+import { RegistroQr } from "@/components/panel/registro-qr";
 
 // Depende de la sesión y el layout puede no pintarla (si no tiene acceso),
 // así que no se valida como navegación instantánea.
@@ -37,7 +39,7 @@ async function Contenido() {
     supabase
       .from("cafeterias")
       .select(
-        "nombre, logo_url, color_fondo, color_texto, color_etiquetas, max_programas",
+        "nombre, slug, logo_url, color_fondo, color_texto, color_etiquetas, max_programas",
       )
       .eq("id", cafeteriaId)
       .single(),
@@ -62,6 +64,7 @@ async function Contenido() {
   const programas = programasRes.data;
   const activos = programas.filter((p) => p.activo).length;
   const maximo = cafeteria.max_programas as number;
+  const linkRegistro = `${await origenActual()}/c/${cafeteria.slug}`;
 
   return (
     <>
@@ -70,6 +73,14 @@ async function Contenido() {
         descripcion={`${activos} programa${activos === 1 ? "" : "s"} activo${activos === 1 ? "" : "s"} · tu plan permite ${maximo}`}
         accion={<BotonAgregar href="/panel/programas/nuevo" />}
       />
+
+      {activos > 0 && (
+        <RegistroQr
+          link={linkRegistro}
+          qr={generarCodigoSvg("qr", linkRegistro)}
+          nombreArchivo={`qr-registro-${cafeteria.slug}`}
+        />
+      )}
 
       {activos > maximo && (
         <div className="mx-4 mt-4 flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200 md:mx-6">

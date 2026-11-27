@@ -1,7 +1,7 @@
 import "server-only";
-import { headers } from "next/headers";
 import type { User } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { origenActual } from "@/lib/origen";
 
 export type ResultadoLink =
   | { ok: true; link: string; userId: string }
@@ -10,18 +10,6 @@ export type ResultadoLink =
 // Ya creó su contraseña (se marca en definirContrasena)
 export function tieneContrasena(usuario: User | null | undefined) {
   return usuario?.user_metadata?.contrasena_definida === true;
-}
-
-// Arma la URL de la app a partir de la petición actual
-async function origenActual() {
-  const h = await headers();
-  const origin = h.get("origin");
-  if (origin) return origin;
-
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  const proto =
-    h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  return `${proto}://${host}`;
 }
 
 // Genera un link de un solo uso para que el usuario cree su contraseña.
