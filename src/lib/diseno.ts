@@ -62,7 +62,10 @@ export const TIPOS_CODIGO = {
   qr: { etiqueta: "QR", ayuda: "El más común; lo lee cualquier cámara." },
   aztec: { etiqueta: "Aztec", ayuda: "Cuadrado y compacto, como en boletos de avión." },
   pdf417: { etiqueta: "PDF417", ayuda: "Rectangular, como en credenciales." },
-  code128: { etiqueta: "Code 128", ayuda: "Código de barras de líneas, como en productos." },
+  code128: {
+    etiqueta: "Code 128",
+    ayuda: "Barras de líneas. Es el más difícil de leer con cámara; mejor usa QR si puedes.",
+  },
 } as const;
 
 export type TipoCodigo = keyof typeof TIPOS_CODIGO;

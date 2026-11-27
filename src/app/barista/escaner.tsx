@@ -72,7 +72,15 @@ export function Escaner() {
 
     lector
       .decodeFromConstraints(
-        { video: { facingMode: { ideal: "environment" } } },
+        {
+          video: {
+            facingMode: { ideal: "environment" },
+            // Sin esto muchos navegadores abren la cámara en 640×480 y los
+            // códigos alargados (Code 128, PDF417) no se alcanzan a leer
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        },
         video.current,
         (resultado, _error, c) => {
           if (resultado && !cancelado) {
