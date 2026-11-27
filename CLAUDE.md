@@ -68,3 +68,6 @@ Después del MVP: notificaciones masivas, varias sucursales completas, niveles, 
 - Un comando o paso a la vez, y espera mi confirmación antes de seguir.
 - No generes código de pruebas, archivos de ejemplo ni manuales/documentación a menos que yo los pida.
 - Cada vez que agregues o cambies algo en el programa, haz un debug exhaustivo antes de darlo por terminado: build, lint y tipos, levantar la app y probar el flujo de punta a punta contra un Supabase local con el `schema.sql`, incluyendo casos de error y permisos (RLS). Los scripts que uses para eso van fuera del repo y no se suben.
+  - Probar tanto con `next start` (producción) como con `next dev` (así la uso yo), revisando errores del navegador y del servidor.
+  - Probar el schema en un Supabase sin permisos automáticos en `public` (como los proyectos nuevos), no solo en el local por defecto.
+  - Si cambias el schema, dame también el script para aplicar el cambio sobre mi base existente, y que se pueda correr aunque una parte ya esté aplicada.

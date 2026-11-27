@@ -323,11 +323,6 @@ create policy "cafeteria_editar_dueno" on public.cafeterias
   using (public.es_dueno() and id = public.mi_cafeteria_id())
   with check (id = public.mi_cafeteria_id());
 
--- El dueño solo puede editar datos visuales, no su plan, su suscripción ni max_programas
-revoke update on public.cafeterias from authenticated;
-grant update (nombre, logo_url, color_fondo, color_texto, color_etiquetas, zona_horaria)
-  on public.cafeterias to authenticated;
-
 -- Sucursales
 create policy "sucursal_ver" on public.sucursales
   for select to authenticated
@@ -358,10 +353,6 @@ create policy "staff_editar_dueno" on public.staff
   using (public.es_dueno() and cafeteria_id = public.mi_cafeteria_id() and id <> auth.uid())
   with check (cafeteria_id = public.mi_cafeteria_id() and id <> auth.uid());
 
--- Solo estas columnas (no id ni cafeteria_id)
-revoke update on public.staff from authenticated;
-grant update (nombre, sucursal_id, rol, activo) on public.staff to authenticated;
-
 -- Programas
 create policy "programa_ver" on public.programas
   for select to authenticated
@@ -375,13 +366,6 @@ create policy "programa_editar_dueno" on public.programas
   for update to authenticated
   using (public.es_dueno() and cafeteria_id = public.mi_cafeteria_id())
   with check (cafeteria_id = public.mi_cafeteria_id());
-
--- google_class_id solo lo escribe el backend
-revoke insert, update on public.programas from authenticated;
-grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
-  on public.programas to authenticated;
-grant update (nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
-  on public.programas to authenticated;
 
 -- Clientes, tarjetas y movimientos: solo lectura para el staff
 -- (los cambios pasan por el backend o por las funciones de sellar/canjear)
@@ -533,8 +517,62 @@ begin
 end;
 $$;
 
--- Permisos de ejecución: solo usuarios logueados (staff)
-revoke all on function public.registrar_sello(text, uuid) from public, anon;
-revoke all on function public.canjear_premio(text, uuid) from public, anon;
-grant execute on function public.registrar_sello(text, uuid) to authenticated;
-grant execute on function public.canjear_premio(text, uuid) to authenticated;
+
+-- ---------------------------------------------------------------------
+--  8. PERMISOS (GRANTS)
+--     Los proyectos nuevos de Supabase no dan permisos automáticos en
+--     el schema public, así que aquí se dan todos de forma explícita.
+--     Se parte de cero para que quede igual en cualquier proyecto.
+--     Los permisos dicen QUÉ se puede hacer; RLS dice SOBRE QUÉ FILAS.
+-- ---------------------------------------------------------------------
+revoke all on all tables    in schema public from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+revoke all on all functions in schema public from public, anon, authenticated;
+
+grant usage on schema public to anon, authenticated, service_role;
+
+-- Backend (service_role): todo. Se salta RLS.
+grant all on all tables    in schema public to service_role;
+grant all on all sequences in schema public to service_role;
+grant execute on all functions in schema public to service_role;
+
+-- Staff logueado: lectura (RLS filtra por cafetería)
+grant select on
+  public.super_admins,
+  public.cafeterias,
+  public.sucursales,
+  public.staff,
+  public.programas,
+  public.clientes,
+  public.tarjetas,
+  public.movimientos
+to authenticated;
+
+-- Cafeterías: el dueño solo edita datos visuales
+-- (no plan, estado_suscripcion ni max_programas)
+grant update (nombre, logo_url, color_fondo, color_texto, color_etiquetas, zona_horaria)
+  on public.cafeterias to authenticated;
+
+-- Sucursales: el dueño las crea, edita y borra
+grant insert (cafeteria_id, nombre, direccion, activa),
+      update (nombre, direccion, activa),
+      delete
+  on public.sucursales to authenticated;
+
+-- Staff: el dueño edita estas columnas (no id ni cafeteria_id).
+-- Las altas las hace el backend al invitar al usuario.
+grant update (nombre, sucursal_id, rol, activo) on public.staff to authenticated;
+
+-- Programas: google_class_id solo lo escribe el backend
+grant insert (cafeteria_id, nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo),
+      update (nombre, descripcion, sellos_requeridos, premio, max_sellos_por_dia, activo)
+  on public.programas to authenticated;
+
+-- Funciones que usan las políticas RLS y la app del barista
+grant execute on function
+  public.mi_cafeteria_id(),
+  public.es_dueno(),
+  public.es_admin(),
+  public.registrar_sello(text, uuid),
+  public.canjear_premio(text, uuid)
+to authenticated;

@@ -1,11 +1,16 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 // Cliente para Server Components, Server Actions y Route Handlers.
 // Usa la sesión del usuario logueado (cookies) y respeta RLS.
 // Crear uno nuevo en cada request, nunca reutilizarlo.
 export async function createClient() {
+  // Todo lo que use la sesión se hace en cada request, nunca en el prerender:
+  // el cliente de Supabase usa Date.now() para revisar si el token venció.
+  await connection();
+
   const cookieStore = await cookies();
 
   return createServerClient(

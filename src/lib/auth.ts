@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export type RolStaff = "dueno" | "barista";
@@ -29,6 +28,12 @@ export type Perfil =
     };
 
 export type TipoPerfil = Perfil["tipo"];
+
+type RolPermitido = Exclude<TipoPerfil, "sin_acceso">;
+
+export type ResultadoAcceso<T extends RolPermitido> =
+  | { permitido: true; perfil: Extract<Perfil, { tipo: T }> }
+  | { permitido: false; destino: string };
 
 // Lee el usuario de la sesión y busca si es super admin o staff.
 // cache() hace que solo se consulte una vez por request.
@@ -96,24 +101,25 @@ export function rutaInicio(tipo: TipoPerfil): string {
   }
 }
 
-// Protege una página o layout: si no tiene sesión lo manda al login,
-// y si su rol no está permitido lo manda a su propia sección.
-export async function requireRol<T extends Exclude<TipoPerfil, "sin_acceso">>(
+// Revisa si el usuario puede entrar a una sección.
+// No redirige: regresa a dónde mandarlo y el layout se encarga.
+// (Redirigir durante el render rompe la validación de Next en modo dev.)
+export async function verificarAcceso<T extends RolPermitido>(
   ...roles: T[]
-): Promise<Extract<Perfil, { tipo: T }>> {
+): Promise<ResultadoAcceso<T>> {
   const perfil = await getPerfil();
 
   if (!perfil) {
-    redirect("/login");
+    return { permitido: false, destino: "/login" };
   }
 
   if (perfil.tipo === "sin_acceso") {
-    redirect("/login?error=sin-acceso");
+    return { permitido: false, destino: "/login?error=sin-acceso" };
   }
 
   if (!(roles as TipoPerfil[]).includes(perfil.tipo)) {
-    redirect(rutaInicio(perfil.tipo));
+    return { permitido: false, destino: rutaInicio(perfil.tipo) };
   }
 
-  return perfil as Extract<Perfil, { tipo: T }>;
+  return { permitido: true, perfil: perfil as Extract<Perfil, { tipo: T }> };
 }
