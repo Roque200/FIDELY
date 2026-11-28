@@ -4,7 +4,11 @@ import { refresh } from "next/cache";
 import { getPerfil } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generarLinkInvitacion, tieneContrasena } from "@/lib/invitaciones";
+import {
+  generarLinkCambioContrasena,
+  generarLinkInvitacion,
+  tieneContrasena,
+} from "@/lib/invitaciones";
 
 const ID_REGEX = /^[0-9a-f-]{36}$/;
 const CORREO_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -240,16 +244,21 @@ export async function cambiarEstadoBarista(
 }
 
 // ---------------------------------------------------------------------
-//  Nuevo link para un barista que no ha creado su contraseña
+//  Nuevo link para el barista: de invitación si no ha creado su
+//  contraseña, o para cambiarla si ya la tiene (la olvidó)
 // ---------------------------------------------------------------------
 
-export type EstadoLinkBarista = { error: string | null; link: string | null };
+export type EstadoLinkBarista = {
+  error: string | null;
+  link: string | null;
+  cambio: boolean;
+};
 
 export async function nuevoLinkBarista(
   _anterior: EstadoLinkBarista,
   fd: FormData,
 ): Promise<EstadoLinkBarista> {
-  const fallo = (error: string): EstadoLinkBarista => ({ error, link: null });
+  const fallo = (error: string): EstadoLinkBarista => ({ error, link: null, cambio: false });
   const id = texto(fd, "id");
 
   const perfil = await perfilDueno();
@@ -272,13 +281,12 @@ export async function nuevoLinkBarista(
   const admin = createAdminClient();
   const { data: usuario, error: errorUsuario } = await admin.auth.admin.getUserById(id);
   if (errorUsuario || !usuario.user?.email) return fallo("No se encontró la cuenta del barista.");
-  if (tieneContrasena(usuario.user)) {
-    return fallo("Este barista ya creó su contraseña; que entre con ella.");
-  }
-
-  const invitacion = await generarLinkInvitacion(usuario.user.email, staff.nombre as string, {
-    permitirExistente: true,
-  });
-  if (!invitacion.ok) return fallo(invitacion.error);
-  return { error: null, link: invitacion.link };
+  const cambio = tieneContrasena(usuario.user);
+  const resultado = cambio
+    ? await generarLinkCambioContrasena(usuario.user.email)
+    : await generarLinkInvitacion(usuario.user.email, staff.nombre as string, {
+        permitirExistente: true,
+      });
+  if (!resultado.ok) return fallo(resultado.error);
+  return { error: null, link: resultado.link, cambio };
 }

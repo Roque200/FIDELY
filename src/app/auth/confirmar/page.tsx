@@ -64,9 +64,13 @@ async function Contenido({
 
   return (
     <>
-      <h1 className="mt-6 text-xl font-semibold text-stone-900">¡Bienvenido!</h1>
+      <h1 className="mt-6 text-xl font-semibold text-stone-900">
+        {tipo === "recovery" ? "Cambiar contraseña" : "¡Bienvenido!"}
+      </h1>
       <p className="mt-1 text-sm text-stone-500">
-        Da clic en continuar para entrar y crear tu contraseña.
+        {tipo === "recovery"
+          ? "Da clic en continuar para elegir tu nueva contraseña."
+          : "Da clic en continuar para entrar y crear tu contraseña."}
       </p>
       <form action={confirmarLink} className="mt-6">
         <input type="hidden" name="token_hash" value={tokenHash} />

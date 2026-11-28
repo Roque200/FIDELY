@@ -3,7 +3,11 @@
 import { refresh } from "next/cache";
 import { getPerfil } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { generarLinkInvitacion, tieneContrasena } from "@/lib/invitaciones";
+import {
+  generarLinkCambioContrasena,
+  generarLinkInvitacion,
+  tieneContrasena,
+} from "@/lib/invitaciones";
 import { SLUG_REGEX } from "@/lib/slug";
 import { esZonaValida } from "@/lib/zonas-horarias";
 
@@ -278,19 +282,21 @@ export async function actualizarCafeteria(
 }
 
 // ---------------------------------------------------------------------
-//  Nuevo link de invitación para un dueño que no la ha aceptado
+//  Nuevo link para el dueño: de invitación si no la ha aceptado, o para
+//  cambiar su contraseña si ya la tiene (la olvidó)
 // ---------------------------------------------------------------------
 
 export type EstadoLink = {
   error: string | null;
   link: string | null;
+  cambio: boolean;
 };
 
 export async function nuevoLinkDueno(
   _anterior: EstadoLink,
   fd: FormData,
 ): Promise<EstadoLink> {
-  const fallo = (error: string): EstadoLink => ({ error, link: null });
+  const fallo = (error: string): EstadoLink => ({ error, link: null, cambio: false });
 
   if (!(await esAdmin())) return fallo("No autorizado.");
 
@@ -301,11 +307,12 @@ export async function nuevoLinkDueno(
 
   const { data: staff, error: errorStaff } = await admin
     .from("staff")
-    .select("id, nombre, rol")
+    .select("id, nombre, rol, activo")
     .eq("id", staffId)
     .maybeSingle();
   if (errorStaff) return fallo(`No se pudo leer al dueño: ${errorStaff.message}`);
   if (!staff || staff.rol !== "dueno") return fallo("Dueño no encontrado.");
+  if (!staff.activo) return fallo("Este dueño está desactivado.");
 
   const { data: usuario, error: errorUsuario } =
     await admin.auth.admin.getUserById(staffId);
@@ -313,17 +320,13 @@ export async function nuevoLinkDueno(
     return fallo("No se encontró la cuenta del dueño.");
   }
 
-  // Solo si todavía no crea su contraseña: si ya la tiene, que entre con ella
-  if (tieneContrasena(usuario.user)) {
-    return fallo("Este dueño ya creó su contraseña; que entre con ella.");
-  }
+  const cambio = tieneContrasena(usuario.user);
+  const resultado = cambio
+    ? await generarLinkCambioContrasena(usuario.user.email)
+    : await generarLinkInvitacion(usuario.user.email, staff.nombre as string, {
+        permitirExistente: true,
+      });
+  if (!resultado.ok) return fallo(resultado.error);
 
-  const invitacion = await generarLinkInvitacion(
-    usuario.user.email,
-    staff.nombre as string,
-    { permitirExistente: true },
-  );
-  if (!invitacion.ok) return fallo(invitacion.error);
-
-  return { error: null, link: invitacion.link };
+  return { error: null, link: resultado.link, cambio };
 }

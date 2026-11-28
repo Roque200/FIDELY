@@ -132,11 +132,12 @@ async function Contenido({
                   <EstadoPill texto="Activo" tono="verde" />
                 )}
               </div>
-              {d.pendiente && d.activo && (
+              {d.activo && (
                 <BotonNuevoLink
                   staffId={d.id}
                   dueno={d.nombre}
                   cafeteria={cafeteria.nombre}
+                  cambio={!d.pendiente}
                 />
               )}
             </div>

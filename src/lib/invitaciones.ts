@@ -69,3 +69,31 @@ export async function generarLinkInvitacion(
     userId: data.user.id,
   };
 }
+
+// Link de un solo uso para que alguien que ya tiene contraseña la cambie
+// (la olvidó). No manda correo: se comparte por WhatsApp o como sea.
+export async function generarLinkCambioContrasena(correo: string): Promise<ResultadoLink> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email: correo,
+  });
+  if (error || !data.user) {
+    return {
+      ok: false,
+      error: `No se pudo generar el link: ${error?.message ?? "sin usuario"}`,
+    };
+  }
+
+  const origen = await origenActual();
+  const params = new URLSearchParams({
+    token_hash: data.properties.hashed_token,
+    type: "recovery",
+    next: "/bienvenida?cambio=1",
+  });
+  return {
+    ok: true,
+    link: `${origen}/auth/confirmar?${params.toString()}`,
+    userId: data.user.id,
+  };
+}

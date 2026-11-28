@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getPerfil, rutaInicio } from "@/lib/auth";
@@ -23,6 +24,13 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
         </Suspense>
 
         <LoginForm />
+
+        <Link
+          href="/login/recuperar"
+          className="mt-4 block text-center text-sm text-stone-500 hover:text-stone-800 hover:underline"
+        >
+          ¿Olvidaste tu contraseña?
+        </Link>
       </div>
     </main>
   );
@@ -47,7 +55,7 @@ async function AvisoSesion({
     return (
       <div className="mt-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 ring-1 ring-red-200">
         El link no es válido, ya se usó o ya venció. Pide uno nuevo a quien te
-        invitó.
+        lo mandó.
       </div>
     );
   }

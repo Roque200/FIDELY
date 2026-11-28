@@ -81,10 +81,15 @@ async function Contenido({ params }: { params: PageProps<"/panel/usuarios/[id]">
                 ? "Está desactivado: no puede entrar ni sellar. Su historial se conserva."
                 : pendiente
                   ? "Todavía no crea su contraseña. Si perdió el link o ya venció, genera uno nuevo."
-                  : "Entra al escáner con su correo y contraseña."}
+                  : "Entra al escáner con su correo y contraseña. Si la olvidó, genérale un link para cambiarla."}
             </p>
-            {barista.activo && pendiente && (
-              <BotonLinkBarista id={barista.id} nombre={barista.nombre} cafeteria={cafeteriaRes.data.nombre} />
+            {barista.activo && (
+              <BotonLinkBarista
+                id={barista.id}
+                nombre={barista.nombre}
+                cafeteria={cafeteriaRes.data.nombre}
+                cambio={!pendiente}
+              />
             )}
             <BotonEstadoBarista key={String(barista.activo)} id={barista.id} activo={barista.activo} />
           </section>

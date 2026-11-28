@@ -13,13 +13,13 @@ export const metadata: Metadata = {
 // Depende de la sesión, así que no se valida como navegación instantánea.
 export const instant = false;
 
-export default function BienvenidaPage() {
+export default function BienvenidaPage({ searchParams }: PageProps<"/bienvenida">) {
   return (
     <main className="flex flex-1 items-center justify-center bg-stone-100 px-4 py-12">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-stone-200">
         <Logo />
         <Suspense fallback={<PantallaCarga />}>
-          <Contenido />
+          <Contenido searchParams={searchParams} />
         </Suspense>
       </div>
     </main>
@@ -27,8 +27,14 @@ export default function BienvenidaPage() {
 }
 
 // Lee la sesión (por eso va dentro de Suspense)
-async function Contenido() {
+async function Contenido({
+  searchParams,
+}: {
+  searchParams: PageProps<"/bienvenida">["searchParams"];
+}) {
   const perfil = await getPerfil();
+  // Llegó con un link para cambiar la contraseña (la olvidó)
+  const cambio = (await searchParams).cambio === "1";
 
   // Sin sesión (link vencido o ya usado): al login
   if (!perfil) return <Redirigir a="/login" />;
@@ -42,7 +48,7 @@ async function Contenido() {
         {nombre ? `¡Hola, ${nombre}!` : "¡Bienvenido!"}
       </h1>
       <p className="mt-1 text-sm text-stone-500">
-        Crea tu contraseña para entrar a Fidely
+        {cambio ? "Escribe tu nueva contraseña para entrar a Fidely" : "Crea tu contraseña para entrar a Fidely"}
         {perfil.correo ? ` con ${perfil.correo}` : ""}.
       </p>
       <FormularioContrasena />

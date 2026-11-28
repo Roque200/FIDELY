@@ -93,19 +93,22 @@ export function BotonEstadoBarista({ id, activo }: { id: string; activo: boolean
   );
 }
 
-// Nuevo link para quien no ha creado su contraseña
+// Nuevo link: de invitación si no ha creado su contraseña, o para
+// cambiarla si ya la tiene (la olvidó)
 export function BotonLinkBarista({
   id,
   nombre,
   cafeteria,
+  cambio,
 }: {
   id: string;
   nombre: string;
   cafeteria: string;
+  cambio: boolean;
 }) {
   const [estado, accion, enviando] = useActionState<EstadoLinkBarista, FormData>(
     nuevoLinkBarista,
-    { error: null, link: null },
+    { error: null, link: null, cambio: false },
   );
   return (
     <div className="space-y-3">
@@ -117,7 +120,11 @@ export function BotonLinkBarista({
           className={`${CLASE_BOTON_SECUNDARIO} flex items-center gap-1.5`}
         >
           <RefreshCw className={`h-4 w-4 ${enviando ? "animate-spin" : ""}`} />
-          {estado.link ? "Generar otro link" : "Generar link de invitación"}
+          {estado.link
+            ? "Generar otro link"
+            : cambio
+              ? "Generar link para cambiar contraseña"
+              : "Generar link de invitación"}
         </button>
       </form>
       <MensajeError texto={estado.error} />
@@ -126,8 +133,16 @@ export function BotonLinkBarista({
           link={estado.link}
           dueno={nombre}
           cafeteria={cafeteria}
-          mensaje={`Hola ${nombre}, ya tienes tu cuenta de barista de ${cafeteria} en Fidely. Entra a este link para crear tu contraseña: ${estado.link}`}
-          ayuda={`Mándaselo a ${nombre}. Sirve una sola vez y vence; el link anterior ya no funciona.`}
+          mensaje={
+            estado.cambio
+              ? `Hola ${nombre}, entra a este link para cambiar tu contraseña de Fidely (${cafeteria}): ${estado.link}`
+              : `Hola ${nombre}, ya tienes tu cuenta de barista de ${cafeteria} en Fidely. Entra a este link para crear tu contraseña: ${estado.link}`
+          }
+          ayuda={
+            estado.cambio
+              ? `Mándaselo a ${nombre}. Sirve una sola vez y vence; su contraseña actual sigue sirviendo hasta que la cambie.`
+              : `Mándaselo a ${nombre}. Sirve una sola vez y vence; el link anterior ya no funciona.`
+          }
         />
       )}
     </div>
