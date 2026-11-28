@@ -57,7 +57,7 @@ const escapar = (v: string) =>
   v.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
 
 // Ícono como imagen SVG (data URI) del color pedido
-function iconoDataUri(clave: ClaveIcono, color: string) {
+export function iconoDataUri(clave: ClaveIcono, color: string) {
   const hijos = NODOS[clave]
     .map(([etiqueta, atributos]) => {
       const attrs = Object.entries(atributos)

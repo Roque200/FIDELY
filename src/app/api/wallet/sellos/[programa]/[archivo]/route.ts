@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { disenoEfectivo, type CafeteriaDiseno, type ProgramaDiseno } from "@/lib/diseno";
 import { imagenSellos } from "@/lib/imagen-sellos";
+import { imagenDeStorage } from "@/lib/imagen-storage";
 
 // Imagen de los sellos para la tarjeta en Google Wallet (y Apple Wallet después).
 // /api/wallet/sellos/<programa>/<sellos>.png?v=<versión del diseño>
@@ -11,25 +12,6 @@ import { imagenSellos } from "@/lib/imagen-sellos";
 const TAMANOS = {
   google: { ancho: 1032, alto: 336 },
 } as const;
-
-const PREFIJO_IMAGENES = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/disenos/`;
-
-// Descarga un ícono propio y lo regresa como data URI. Si falla (o no es del
-// almacenamiento de Fidely) regresa null y se usa el ícono del catálogo:
-// la imagen de sellos nunca debe romperse por un ícono.
-async function iconoPropio(url: string | null): Promise<string | null> {
-  if (!url || !url.startsWith(PREFIJO_IMAGENES)) return null;
-  try {
-    const respuesta = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const tipo = respuesta.headers.get("content-type") ?? "";
-    if (!respuesta.ok || !["image/png", "image/jpeg"].includes(tipo)) return null;
-    const datos = Buffer.from(await respuesta.arrayBuffer());
-    if (datos.byteLength > 1024 * 1024) return null;
-    return `data:${tipo};base64,${datos.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
 
 export async function GET(
   request: NextRequest,
@@ -64,8 +46,8 @@ export async function GET(
 
   const diseno = disenoEfectivo(cafeteria, data as ProgramaDiseno);
   const [activo, inactivo] = await Promise.all([
-    iconoPropio(diseno.iconoSelloUrl),
-    iconoPropio(diseno.iconoSelloInactivoUrl),
+    imagenDeStorage(diseno.iconoSelloUrl),
+    imagenDeStorage(diseno.iconoSelloInactivoUrl),
   ]);
   diseno.iconoSelloUrl = activo;
   diseno.iconoSelloInactivoUrl = inactivo;

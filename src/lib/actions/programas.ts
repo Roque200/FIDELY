@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { actualizarProgramaGoogle } from "@/lib/google-wallet";
+import { actualizarProgramaApple } from "@/lib/apple-wallet";
 import { origenActual } from "@/lib/origen";
 import { getPerfil } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -106,10 +107,12 @@ export async function guardarPrograma(
     return fallo("El programa no existe o no es de tu cafetería.");
   }
 
-  // Las tarjetas ya guardadas en Google Wallet se actualizan después de responder
+  // Las tarjetas ya guardadas en Google y Apple Wallet se actualizan después de responder
   if (id) {
     const origen = await origenActual();
-    after(() => actualizarProgramaGoogle(id, origen));
+    after(() =>
+      Promise.all([actualizarProgramaGoogle(id, origen), actualizarProgramaApple(id)]),
+    );
   }
 
   // Programa nuevo: sigue el diseño de su tarjeta. Edición: de regreso a la lista.

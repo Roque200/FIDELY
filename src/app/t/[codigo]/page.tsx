@@ -7,6 +7,8 @@ import { tarjetaPublica } from "@/lib/publico";
 import { disenoEfectivo } from "@/lib/diseno";
 import { generarCodigoSvg } from "@/lib/codigos";
 import { configGoogle } from "@/lib/google-wallet";
+import { configApple } from "@/lib/apple-wallet";
+import { headers } from "next/headers";
 import { PantallaCarga } from "@/components/pantalla-carga";
 import { TarjetaDiseno } from "@/components/panel/tarjeta-diseno";
 
@@ -18,6 +20,13 @@ export const metadata: Metadata = {
 };
 
 export const instant = false;
+
+const MENSAJES_WALLET: Record<string, string> = {
+  error: "No pudimos preparar tu tarjeta para Google Wallet. Intenta de nuevo en un momento.",
+  "no-disponible": "Google Wallet no está disponible por ahora.",
+  "apple-error": "No pudimos preparar tu tarjeta para Apple Wallet. Intenta de nuevo en un momento.",
+  "apple-no-disponible": "Apple Wallet no está disponible por ahora.",
+};
 
 export default function TarjetaPage({ params, searchParams }: PageProps<"/t/[codigo]">) {
   return (
@@ -52,6 +61,16 @@ async function Contenido({
   const completa = tarjeta.sellos >= programa.sellos_requeridos;
   const faltan = Math.max(0, programa.sellos_requeridos - tarjeta.sellos);
 
+  // Botones de Wallet: primero el del celular que trae (Apple en iPhone/Mac)
+  const agente = (await headers()).get("user-agent") ?? "";
+  const esApple = /iPhone|iPad|iPod|Macintosh/.test(agente);
+  const botonesWallet = [
+    configApple() && { href: `/api/wallet/apple/pase/${tarjeta.codigo}`, texto: "Agregar a Apple Wallet", apple: true },
+    configGoogle() && { href: `/api/wallet/google/${tarjeta.codigo}`, texto: "Agregar a Google Wallet", apple: false },
+  ]
+    .filter((b): b is { href: string; texto: string; apple: boolean } => Boolean(b))
+    .sort((a, b) => Number(b.apple === esApple) - Number(a.apple === esApple));
+
   return (
     <div className="space-y-5">
       {nueva === "1" && (
@@ -67,17 +86,13 @@ async function Contenido({
         </div>
       )}
 
-      {(wallet === "error" || wallet === "no-disponible") && (
+      {typeof wallet === "string" && MENSAJES_WALLET[wallet] && (
         <div
           role="alert"
           className="flex items-start gap-2 rounded-xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200"
         >
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>
-            {wallet === "error"
-              ? "No pudimos preparar tu tarjeta para Google Wallet. Intenta de nuevo en un momento."
-              : "Google Wallet no está disponible por ahora."}
-          </p>
+          <p>{MENSAJES_WALLET[wallet]}</p>
         </div>
       )}
 
@@ -116,15 +131,20 @@ async function Contenido({
         </p>
       )}
 
-      {configGoogle() && (
-        // Sin prefetch: preparar la tarjeta en Google solo cuando la piden
-        <a
-          href={`/api/wallet/google/${tarjeta.codigo}`}
-          className="mx-auto flex w-full max-w-[320px] items-center justify-center gap-2 rounded-full bg-black px-5 py-3 font-medium text-white transition hover:bg-stone-800"
-        >
-          <Wallet className="h-5 w-5" />
-          Agregar a Google Wallet
-        </a>
+      {botonesWallet.length > 0 && (
+        <div className="space-y-3">
+          {botonesWallet.map((b) => (
+            // Sin prefetch: la tarjeta de Wallet se prepara solo cuando la piden
+            <a
+              key={b.href}
+              href={b.href}
+              className="mx-auto flex w-full max-w-[320px] items-center justify-center gap-2 rounded-full bg-black px-5 py-3 font-medium text-white transition hover:bg-stone-800"
+            >
+              <Wallet className="h-5 w-5" />
+              {b.texto}
+            </a>
+          ))}
+        </div>
       )}
 
       <div className="space-y-1 text-center text-xs text-stone-500">

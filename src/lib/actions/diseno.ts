@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { after } from "next/server";
 import { actualizarProgramaGoogle } from "@/lib/google-wallet";
+import { actualizarProgramaApple } from "@/lib/apple-wallet";
 import { origenActual } from "@/lib/origen";
 import { getPerfil } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -140,7 +141,9 @@ export async function guardarDiseno(
 
   // Las tarjetas ya guardadas en Google Wallet se actualizan después de responder
   const origen = await origenActual();
-  after(() => actualizarProgramaGoogle(id, origen));
+  after(() =>
+    Promise.all([actualizarProgramaGoogle(id, origen), actualizarProgramaApple(id)]),
+  );
 
   // Que la página (y la vista previa) muestren lo guardado
   refresh();

@@ -3,6 +3,7 @@
 import { after } from "next/server";
 import { getPerfil } from "@/lib/auth";
 import { actualizarTarjetaGoogle } from "@/lib/google-wallet";
+import { actualizarTarjetaApple } from "@/lib/apple-wallet";
 import { origenActual } from "@/lib/origen";
 import { createClient } from "@/lib/supabase/server";
 
@@ -110,7 +111,9 @@ async function ejecutar(
 
   // La tarjeta en la cartera del cliente se actualiza después de responder
   const origen = await origenActual();
-  after(() => actualizarTarjetaGoogle(codigo, origen));
+  after(() =>
+    Promise.all([actualizarTarjetaGoogle(codigo, origen), actualizarTarjetaApple(codigo)]),
+  );
 
   const tarjeta = await leerTarjeta(codigo);
   if (!tarjeta) return { ok: false, error: NO_ENCONTRADA };
